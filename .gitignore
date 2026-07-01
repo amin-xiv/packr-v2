@@ -1,0 +1,53 @@
+# Generated files and binaries
+*.o
+*.a
+*.so
+*.lo
+archiver
+archiver.exe
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+test_archive_*
+
+# Build directories
+build/
+obj/
+bin/
+dist/
+out/
+
+# Temporary files
+*~
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# Logs and runtime data
+*.log
+logs/
+*.err
+core*
+vgcore.*
+
+# Dependencies
+deps/
+lib/
+
+# IDE/Editor files (Unix-focused)
+.vscode/
+.idea/
+*.code-workspace
+.project
+.cproject
+.settings/
+
+# OS-generated
+.#*
+*.bak
+
+# Extras
+compile_commands.json
+.cache/

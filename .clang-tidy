@@ -4,5 +4,4 @@ Checks: |-
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity, -readability-duplicate-include,
   -bugprone-easily-swappable-parameters, -modernize-avoid-c-arrays,
-  -performance-enum-size
 ...

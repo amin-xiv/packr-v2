@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hpp"
+#include <filesystem>
 #include <packr/types.hpp>
 #include <climits>
 #include <string_view>
@@ -16,29 +16,34 @@
 
 namespace packr {
 
+// This struct would be written into the pack file
 struct file_entry {
     // Constructors
     file_entry() = default;
     file_entry(std::string_view file_path, u32 nest_count);
 
     char filename[NAME_MAX]{};
-    u64 size{};     // file size
-    u64 acc_time{}; // last access time
-    u64 mod_time{}; // last modification time
-    u64 sc_time{};  // last status change time
+    char secondary_path[PATH_MAX]; // To store symlink target paths, block file paths..etc
+    u64 size{};                    // file size
+    u64 acc_time{};                // last access time
+    u64 mod_time{};                // last modification time
+    u64 sc_time{};                 // last status change time
     u16 filename_length{};
+    u16 secondary_path_length{};
     u16 mode{};       // permissions
-    u8 entry_class{}; // For future features(maybe)
+    file_type type{}; // For future features(maybe)
     bool success{false};
 
 } __attribute__((packed));
 
+// This struct would be written into the pack file
 struct dir_entry {
     // Constructors
     dir_entry() = default;
     dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count);
 
     char dirname[NAME_MAX]{};
+    char secondary_path[PATH_MAX]; // Holds the path of the target directory if this is a symlink
     u64 child_entry_count{};
     u64 child_file_count{};
     u64 child_dir_count{};
@@ -50,6 +55,7 @@ struct dir_entry {
     u64 mod_time{}; // last modification time
     u64 sc_time{};  // last status change time
     u16 dirname_length{};
+    u16 secondary_path_length{};
     u16 mode{};       // permissions
     u8 entry_class{}; // For future features(maybe)
     bool success{false};
@@ -66,7 +72,7 @@ struct dir_entry {
 
 } __attribute__((packed));
 
-// Almost the same as dir_entry, just offers the pack() function and just differentiiates regular dirs from pack headers.
+// Almost the same as dir_entry, just offers the pack() function and just differentiates regular dirs from pack headers
 struct pack_header : public dir_entry {
     // To inherit the constructors from dir_entry
     using dir_entry::dir_entry;
@@ -75,15 +81,40 @@ struct pack_header : public dir_entry {
     [[nodiscard]] bool pack(std::string_view dir_path, DIR* dir, FILE* pack_file, u8 opts);
 };
 
-// Needed by special markers
-enum class entry_class {
-    CHILD_ENT = 0x40,  // 64
-    NESTED_ENT = 0x80, // 128
+// Represents directories, acts like a DIR*
+class Directory {
+  public:
+    Directory() = delete;
+    Directory(std::filesystem::path dir_path);
+    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const;
+    [[nodiscard]] const std::filesystem::path& path_obj() const;
+    operator bool() const;
+
+  private:
+    const std::filesystem::path dir_path;
+    const std::filesystem::directory_entry directory;
+    dir_type type;
+    std::string secondary_path; // Points to target directory if it's a symlink
+    bool is_valid{};
+    std::string error_message;
 };
 
-// This is included BEFORE entry headers(to know how much memory to read)
-struct special_marker {
-    u8 type; // Should only be set by ENT_* and PACK_* macros and binary ORed with enum entry_class
-} __attribute__((packed));
+// Represents files, acts like a FILE*
+class File {
+  public:
+    File() = delete;
+    File(std::filesystem::path file_path);
+    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const;
+    [[nodiscard]] const std::filesystem::path& path_obj() const;
+    operator bool() const;
+
+  private:
+    const std::filesystem::path file_path;
+    const std::filesystem::directory_entry file;
+    file_type type;
+    std::string secondary_path; // points to block device path, target path(if symlink)..etc
+    bool is_valid{};
+    std::string error_message;
+};
 
 } // namespace packr

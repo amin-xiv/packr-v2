@@ -13,6 +13,9 @@
 #include <sys/stat.h>
 #include <cstdio>
 #include <unistd.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace packr {
 
@@ -499,6 +502,66 @@ bool dir_entry::unpack(FILE* pack_file, u8 opts, u32 nest_count) {
 
     free(cwd);
     return true;
+}
+
+Directory::Directory(fs::path path) : dir_path(std::move(path)), directory(dir_path) {
+    if(!this->directory.exists() || !this->directory.is_directory()) {
+        this->is_valid = false;
+        this->error_message = std::string{"The path "} + dir_path.string() + std::string{" doesn't point to a valid directory!"};
+
+    } else if(this->directory.is_symlink()) {
+        this->is_valid = true;
+        this->type = dir_type::symlink;
+        this->secondary_path = fs::read_symlink(this->dir_path).string();
+
+    } else {
+        this->is_valid = true;
+        this->type = dir_type::regular;
+    }
+}
+
+const fs::directory_entry& Directory::entry_obj() const {
+    return this->directory;
+}
+
+const fs::path& Directory::path_obj() const {
+    return this->dir_path;
+}
+
+Directory::operator bool() const {
+    return this->is_valid;
+}
+
+File::File(std::filesystem::path file_path) : file_path(std::move(file_path)), file(this->file_path) {
+    if(!this->file.exists() || this->file.is_directory()) {
+        this->is_valid = false;
+        this->error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
+
+    } else if(this->file.is_symlink()) {
+        this->is_valid = true;
+        this->secondary_path = fs::read_symlink(this->file_path).string();
+        this->type = file_type::symlink;
+
+    } else if(this->file.is_regular_file()) {
+        this->is_valid = true;
+
+    } else {
+        this->is_valid = false;
+        this->type = file_type::special;
+        this->error_message = std::string{"Skipping special file: "} + this->file_path.string();
+    }
+}
+
+const fs::directory_entry& File::entry_obj() const {
+    return this->file;
+}
+
+const fs::path& File::path_obj() const {
+    return this->file_path;
+}
+
+File::operator bool() const {
+    return this->is_valid;
 }
 
 } // namespace packr

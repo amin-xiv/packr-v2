@@ -7,9 +7,9 @@
 
 namespace packr {
 
-std::optional<std::string> join_to_path(const std::string& filename, const std::string& cwd);
+extern std::optional<std::string> join_to_path(const std::string& filename, const std::string& cwd);
 // Params not string_view due to std::string addition/concatination being carried out on them
-void add_dirname(dir_entry* dir_ent, std::string named_as, const std::string& src_path);
-std::optional<std::string> extract_filename(std::string_view path);
+extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::string& src_path);
+extern std::optional<std::string> extract_filename(std::string_view path);
 
 } // namespace packr

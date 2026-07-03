@@ -30,8 +30,9 @@ struct file_entry {
     u64 sc_time{};                 // last status change time
     u16 filename_length{};
     u16 secondary_path_length{};
-    u16 mode{};       // permissions
-    file_type type{}; // For future features(maybe)
+    u16 mode{}; // permissions
+    entry_class entry_class{};
+    file_type type{};
     bool success{false};
 
 } __attribute__((packed));
@@ -56,8 +57,9 @@ struct dir_entry {
     u64 sc_time{};  // last status change time
     u16 dirname_length{};
     u16 secondary_path_length{};
-    u16 mode{};       // permissions
-    u8 entry_class{}; // For future features(maybe)
+    u16 mode{};                // permissions
+    entry_class entry_class{}; // u8
+    dir_type type{};           // u8
     bool success{false};
 
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack

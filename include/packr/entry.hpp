@@ -30,9 +30,9 @@ struct file_entry {
     u64 sc_time{};                 // last status change time
     u16 filename_length{};
     u16 secondary_path_length{};
-    u16 mode{}; // permissions
-    entry_class entry_class{};
-    file_type type{};
+    u16 mode{};                // permissions
+    entry_class entry_class{}; // u8
+    file_type type{};          // u8
     bool success{false};
 
 } __attribute__((packed));

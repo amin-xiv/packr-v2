@@ -27,7 +27,7 @@ dir_entry::dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count) {
     this->total_file_count = 0;
     this->total_dir_count = 0;
     this->total_entry_count = 0;
-    this->entry_class = std::to_underlying((nest_count - 1) == 0 ? entry_class::CHILD_ENT : entry_class::NESTED_ENT);
+    this->entry_class = (nest_count - 1) == 0 ? entry_class::CHILD_ENT : entry_class::NESTED_ENT;
     this->size = 0;
     add_dirname(this, "", std::string{dir_str.data(), dir_str.size()});
 

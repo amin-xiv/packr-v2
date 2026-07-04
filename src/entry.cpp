@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <filesystem>
+#include <system_error>
 
 namespace fs = std::filesystem;
 
@@ -505,45 +506,59 @@ bool dir_entry::unpack(FILE* pack_file, u8 opts, u32 nest_count) {
 }
 
 Directory::Directory(fs::path path) : dir_path(std::move(path)), directory(dir_path) {
-    if(!this->directory.exists() || !this->directory.is_directory()) {
+    fs::file_status sym_status{this->directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
+    std::error_code err{};                                        // Just to avoid exceptions throw by fs::is_directory
+
+    if(!fs::exists(sym_status)) {
         this->is_valid = false;
         this->error_message = std::string{"The path "} + dir_path.string() + std::string{" doesn't point to a valid directory!"};
 
-    } else if(this->directory.is_symlink()) {
+    } else if(fs::is_directory(this->directory, err) && fs::is_symlink(sym_status)) {
+        // First condition to check if the entry is a symlink, and the second to check if it was an actual directory
         this->is_valid = true;
         this->type = dir_type::symlink;
+
+        // REVISE
         this->secondary_path = fs::read_symlink(this->dir_path).string();
 
-    } else {
+    } else if(fs::is_directory(sym_status)) {
         this->is_valid = true;
         this->type = dir_type::regular;
+    } else {
+        this->is_valid = false;
+        this->error_message = "Unknown directory type!";
     }
 }
 
-const fs::directory_entry& Directory::entry_obj() const {
+const fs::directory_entry& Directory::entry_obj() const noexcept {
     return this->directory;
 }
 
-const fs::path& Directory::path_obj() const {
+const fs::path& Directory::path_obj() const noexcept {
     return this->dir_path;
 }
 
-Directory::operator bool() const {
+Directory::operator bool() const noexcept {
     return this->is_valid;
 }
 
 File::File(std::filesystem::path file_path) : file_path(std::move(file_path)), file(this->file_path) {
-    if(!this->file.exists() || this->file.is_directory()) {
+    fs::file_status sym_status{this->file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
+
+    if(!fs::exists(sym_status) || this->file.is_directory() || fs::is_directory(sym_status)) {
         this->is_valid = false;
         this->error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
 
-    } else if(this->file.is_symlink()) {
+    } else if(fs::is_symlink(sym_status)) {
         this->is_valid = true;
-        this->secondary_path = fs::read_symlink(this->file_path).string();
         this->type = file_type::symlink;
 
-    } else if(this->file.is_regular_file()) {
+        // REVISE
+        this->secondary_path = fs::read_symlink(this->file_path).string();
+
+    } else if(fs::is_regular_file(sym_status)) {
         this->is_valid = true;
+        this->type = file_type::regular;
 
     } else {
         this->is_valid = false;
@@ -552,15 +567,15 @@ File::File(std::filesystem::path file_path) : file_path(std::move(file_path)), f
     }
 }
 
-const fs::directory_entry& File::entry_obj() const {
+const fs::directory_entry& File::entry_obj() const noexcept {
     return this->file;
 }
 
-const fs::path& File::path_obj() const {
+const fs::path& File::path_obj() const noexcept {
     return this->file_path;
 }
 
-File::operator bool() const {
+File::operator bool() const noexcept {
     return this->is_valid;
 }
 

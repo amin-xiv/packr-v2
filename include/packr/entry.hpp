@@ -84,13 +84,16 @@ struct pack_header : public dir_entry {
 };
 
 // Represents directories, acts like a DIR*
+
+// DIRECTORY_ENTRY::IS(SPECIFIED) WORK AS STAT!!
+
 class Directory {
   public:
     Directory() = delete;
     Directory(std::filesystem::path dir_path);
-    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const;
-    [[nodiscard]] const std::filesystem::path& path_obj() const;
-    operator bool() const;
+    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
+    [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
+    operator bool() const noexcept;
 
   private:
     const std::filesystem::path dir_path;
@@ -106,9 +109,9 @@ class File {
   public:
     File() = delete;
     File(std::filesystem::path file_path);
-    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const;
-    [[nodiscard]] const std::filesystem::path& path_obj() const;
-    operator bool() const;
+    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
+    [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
+    operator bool() const noexcept;
 
   private:
     const std::filesystem::path file_path;

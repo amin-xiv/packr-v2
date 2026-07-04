@@ -4,7 +4,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(packr ./src/entry.cpp ./src/main.cpp ./src/utils.cpp)
+add_executable(packr ./src/entry.cpp ./src/main.cpp ./src/utils.cpp ./src/fs_node.cpp)
 target_include_directories(packr PUBLIC ./include)
 add_compile_options(-Wall 
 					-Wextra

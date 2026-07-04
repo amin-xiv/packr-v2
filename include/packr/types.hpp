@@ -33,7 +33,7 @@ enum class dir_type : u8 {
     symlink
 };
 
-enum class entry_class : u8 {
+enum class entry_class_t : u8 {
     CHILD_ENT = 0x40,  // 64
     NESTED_ENT = 0x80, // 128
 };

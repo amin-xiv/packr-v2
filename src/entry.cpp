@@ -133,6 +133,8 @@ file_entry::file_entry(std::string_view file_path, u32 nest_count) {
     std::strcpy(this->filename, actual_filename_str.data());
     this->size = file_stat.st_size;
     this->filename_length = strlen(filename); // +1 to count the \0
+
+    // DOUBLES??
     this->acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
     this->mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
     this->sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);

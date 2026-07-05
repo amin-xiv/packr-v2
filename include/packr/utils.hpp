@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <string_view>
 #include <packr/entry.hpp>
 #include <optional>
@@ -10,6 +11,7 @@ namespace packr {
 extern std::optional<std::string> join_to_path(const std::string& filename, const std::string& cwd);
 // Params not string_view due to std::string addition/concatination being carried out on them
 extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::string& src_path);
-extern std::optional<std::string> extract_filename(std::string_view path);
+[[nodiscard]] extern std::optional<std::string> extract_filename(std::string_view path);
+[[nodiscard]] extern u64 get_dir_size(const std::filesystem::directory_entry& dir);
 
 } // namespace packr

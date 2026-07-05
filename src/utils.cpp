@@ -1,8 +1,10 @@
 #include "../include/packr/utils.hpp"
 
+#include <filesystem>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <cstddef>
+#include <system_error>
 #include <unistd.h>
 #include <cstring>
 #include <optional>
@@ -47,6 +49,25 @@ std::optional<std::string> extract_filename(std::string_view path) {
     std::string filename{
         path.substr(slash_last_instance == std::string::npos ? 0 : slash_last_instance + 1)}; // +1 to skip the last '/'
     return filename;
+}
+
+u64 get_dir_size(const std::filesystem::directory_entry& dir) {
+    // dummy error code
+    std::error_code err;
+
+    u64 size{};
+
+    if(!dir.exists() || !std::filesystem::is_directory(dir.symlink_status())) {
+        return -1;
+    }
+
+    for(const std::filesystem::directory_entry& ent : std::filesystem::recursive_directory_iterator(dir.path())) {
+        if(std::filesystem::is_regular_file(ent.symlink_status())) {
+            size += std::filesystem::file_size(ent, err);
+        }
+    }
+
+    return size;
 }
 
 } // namespace packr

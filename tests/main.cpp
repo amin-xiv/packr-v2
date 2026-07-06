@@ -152,17 +152,18 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     // dir_entry initialization
     file_entry fileEntry{file_fs.path().string(), DEFAULT_ROOT_DIR};
 
+    struct stat ent_stat;
+    // getting the dir's timestamps and such
+    ASSERT_FALSE(lstat(file_fs.path().c_str(), &ent_stat) == -1);
+
     ASSERT_TRUE(fileEntry.success);
     EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.filename);
     EXPECT_EQ(file_fs.path().filename().string().size(), fileEntry.filename_length);
     EXPECT_EQ(file_fs.file_size(), fileEntry.size);
-
-    // Let's deal with time later
-    // EXPECT_EQ(dir_fs.last_write_time(err).time_since_epoch().count(), std::chrono::duration<u64>(dirEntry.mod_time).count());
-    //
-    // Mode is also not now
-    // EXPECT_EQ(std::to_underlying(fs::perms(fileEntry.mode)), std::to_underlying(file_fs.status().permissions()));
-    //
+    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), fileEntry.mod_time);
+    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), fileEntry.acc_time);
+    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), fileEntry.sc_time);
+    EXPECT_EQ(fs::perms(fileEntry.mode), file_fs.status().permissions());
     EXPECT_EQ(fileEntry.type, file_type::regular);
 }
 

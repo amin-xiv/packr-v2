@@ -106,6 +106,12 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_co
     // Dummy error code object to avoid exceptions
     std::error_code err;
 
+    struct stat file_stat;
+    if(lstat(file_path.c_str(), &file_stat) == -1) {
+        this->success = false;
+        return;
+    }
+
     File file{file_path};
     if(!file) {
         this->success = false;
@@ -120,6 +126,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_co
     const std::string& actual_filename{file_path.filename().string()};
     std::strcpy(this->filename, actual_filename.data());
 
+    // TODO: SYMLINKSS!!
     this->size = fs::file_size(file_path, err);
     if(err) { // i.e. if err.value() > 0
         this->success = false;
@@ -128,12 +135,14 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_co
 
     this->filename_length = actual_filename.length(); // +1 to count the \0
 
-    // DOUBLES??
-    /*
+    // TODO: DOUBLES??
     this->acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
     this->mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
     this->sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);
-    */
+
+    if(fs::is_regular_file(file.entry_obj().symlink_status())) {
+        this->type = file_type::regular;
+    }
 
     this->mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
     this->success = true;

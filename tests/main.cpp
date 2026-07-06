@@ -1,12 +1,12 @@
-#include "packr/types.hpp"
-#include <ctime>
 #include <packr/utils.hpp>
+#include <packr/types.hpp>
 #include <packr/entry.hpp>
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
 #include <optional>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -120,20 +120,24 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     // dir_entry initialization
     dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR};
 
+    struct stat ent_stat;
+    // getting the dir's timestamps and such
+    ASSERT_FALSE(lstat(full_path.value().data(), &ent_stat) == -1);
+
     ASSERT_TRUE(dirEntry.success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.dirname);
     EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.dirname_length);
     EXPECT_EQ(get_dir_size(dir_fs), dirEntry.size);
-    // Let's deal with time later
-    // EXPECT_EQ(dir_fs.last_write_time(err).time_since_epoch().count(), std::chrono::duration<u64>(dirEntry.mod_time).count());
+    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), dirEntry.mod_time);
+    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), dirEntry.acc_time);
+    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), dirEntry.sc_time);
     EXPECT_EQ(dirEntry.child_entry_count, 2);
     EXPECT_EQ(dirEntry.child_file_count, 1);
     EXPECT_EQ(dirEntry.child_dir_count, 1);
     EXPECT_EQ(dirEntry.total_entry_count, 7);
     EXPECT_EQ(dirEntry.total_file_count, 4);
     EXPECT_EQ(dirEntry.total_dir_count, 3);
-    // Mode is also not now
-    // EXPECT_EQ(std::to_underlying(fs::perms(dirEntry.mode)), std::to_underlying(dir_fs.status().permissions()));
+    EXPECT_EQ((fs::perms(dirEntry.mode)), dir_fs.status().permissions());
     EXPECT_EQ(dirEntry.type, dir_type::regular);
 }
 

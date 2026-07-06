@@ -3,7 +3,6 @@
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <filesystem>
-// #include <stdexcept>
 #include <string>
 #include <sys/stat.h>
 #include <cstring>
@@ -32,18 +31,17 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
     this->mode = std::to_underlying(dir.symlink_status().permissions());
 
-    //    struct dirent* entry;
-    //   struct stat ent_stat;
+    struct stat ent_stat;
 
     for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
         std::string full_path{entry.path().string()};
 
         std::println("current entry: {}", full_path);
 
-        // if(lstat(full_path_str.data(), &ent_stat) == -1) {
-        //  this->success = false;
-        // return;
-        //}
+        if(lstat(full_path.data(), &ent_stat) == -1) {
+            this->success = false;
+            return;
+        }
 
         if(fs::is_directory(entry.symlink_status())) {
             dir_entry data_inner{entry, nest_count + 2};
@@ -90,20 +88,16 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
-    // get timestamps and mode
-    // if(nest_count == 0) {
-    //        struct stat root_stat;
-    //       const char* dir_str_ptr{dir_str.data()};
-    //      if(lstat(dir_str_ptr, &root_stat) == -1) {
-    //         return;
-    //   }
+    if(nest_count == 0) {
+        struct stat root_stat;
+        if(lstat(dir.path().string().data(), &root_stat) == -1) {
+            return;
+        }
 
-    /*
-    this->acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
-    this->mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
-    this->sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
-    */
-    //}
+        this->acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
+        this->mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
+        this->sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
+    }
 
     this->success = true;
 }

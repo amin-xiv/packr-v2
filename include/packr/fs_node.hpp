@@ -1,3 +1,5 @@
+#pragma once
+
 #include <packr/types.hpp>
 #include <filesystem>
 
@@ -25,7 +27,7 @@ class Directory {
 class File {
   public:
     File() = delete;
-    File(std::filesystem::path file_path);
+    File(const std::filesystem::path& file_path);
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     operator bool() const noexcept;

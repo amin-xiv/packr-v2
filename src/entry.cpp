@@ -1,6 +1,8 @@
 #include <packr/entry.hpp>
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
+#include <packr/fs_node.hpp>
+#include <filesystem>
 #include <stdexcept>
 #include <string_view>
 #include <string>
@@ -12,6 +14,10 @@
 #include <sys/stat.h>
 #include <cstdio>
 #include <unistd.h>
+#include <system_error>
+#include <utility>
+
+namespace fs = std::filesystem;
 
 namespace packr {
 
@@ -114,31 +120,40 @@ dir_entry::dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count) {
     this->success = true;
 }
 
-file_entry::file_entry(std::string_view file_path, u32 nest_count) {
-    struct stat file_stat;
-    const char* file_path_ptr(file_path.data());
-    if(lstat(file_path_ptr, &file_stat) == -1) {
+file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_count) {
+    // Dummy error code object to avoid exceptions
+    std::error_code err;
+
+    File file{file_path};
+    if(!file) {
         this->success = false;
         return;
     }
 
-    // As filename is the absolute path, actual_filename is the name of the file only
-    std::optional<std::string> actual_filename{extract_filename(file_path)};
-    if(!actual_filename) {
+    if(!fs::exists(file.entry_obj().symlink_status())) {
         this->success = false;
         return;
     }
 
-    std::string& actual_filename_str{actual_filename.value()};
-    std::strcpy(this->filename, actual_filename_str.data());
-    this->size = file_stat.st_size;
-    this->filename_length = strlen(filename); // +1 to count the \0
+    const std::string& actual_filename{file_path.filename().string()};
+    std::strcpy(this->filename, actual_filename.data());
+
+    this->size = fs::file_size(file_path, err);
+    if(err) { // i.e. if err.value() > 0
+        this->success = false;
+        return;
+    }
+
+    this->filename_length = actual_filename.length(); // +1 to count the \0
 
     // DOUBLES??
+    /*
     this->acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
     this->mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
     this->sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);
-    this->mode = file_stat.st_mode;
+    */
+
+    this->mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
     this->success = true;
 }
 

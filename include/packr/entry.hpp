@@ -1,9 +1,10 @@
 #pragma once
 
 #include <packr/types.hpp>
+#include <packr/fs_node.hpp>
 #include <climits>
-#include <string_view>
 #include <dirent.h>
+#include <string_view>
 
 #define ENT_DIR_START ((uint8_t)0x01)
 #define ENT_DIR_END ((uint8_t)0x02)
@@ -19,7 +20,7 @@ namespace packr {
 struct file_entry {
     // Constructors
     file_entry() = default;
-    file_entry(std::string_view file_path, u32 nest_count);
+    file_entry(const std::filesystem::path& file_path, const u32 nest_count);
 
     char filename[NAME_MAX]{};
     char secondary_path[PATH_MAX]; // To store symlink target paths, block file paths..etc

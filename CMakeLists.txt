@@ -22,7 +22,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
-add_executable(main_tests ./tests/main.cpp ./src/utils.cpp ./src/entry.cpp)
+add_executable(main_tests ./tests/main.cpp ./src/utils.cpp ./src/entry.cpp ./src/fs_node.cpp)
 include(GoogleTest)
 target_link_libraries(main_tests PRIVATE GTest::gtest_main)
 target_include_directories(main_tests PRIVATE ./include)

@@ -138,20 +138,12 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
 }
 
 TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
-    /*
-     * First, try to use file_name from joinToPath.normal in a fixture
-     * Obtain the variable file_name
-     * Obtain the relevant file information using std::filesystem
-     * Intialize a file_entry object
-     * Compare the data, that they are equal, IN DETAIL
-     */
-
     // dummy ec object to avoid exceptions
     std::error_code err;
 
     // fs directory intialization
-    fs::directory_entry file_fs{full_path.value() + '/' + "hallo.txt"};
-    ASSERT_TRUE(file_fs.exists());
+    fs::directory_entry file_fs{std::string{full_path.value() + '/' + "hallo.txt"}};
+    ASSERT_TRUE(file_fs.exists()) << file_fs.path().string();
 
     // dir_entry initialization
     file_entry fileEntry{file_fs.path().string(), DEFAULT_ROOT_DIR};

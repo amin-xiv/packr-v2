@@ -44,7 +44,7 @@ Directory::operator bool() const noexcept {
     return this->is_valid;
 }
 
-File::File(std::filesystem::path file_path) : file_path(std::move(file_path)), file(this->file_path) {
+File::File(const std::filesystem::path& file_path) : file_path(file_path), file(this->file_path) {
     fs::file_status sym_status{this->file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
     std::error_code err{};                                   // Just to avoid exceptions throw by fs::is_directory
 

@@ -98,7 +98,8 @@ int main(int argc, char** argv) {
             std::println("Source directory found!");
         }
 
-        packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
+        // packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
+        packr::pack_header dir_data{};
         if(!dir_data.success) {
             std::println("pack_header constructor: {}", std::strerror(errno));
             return 1;
@@ -140,6 +141,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        /*
         if(!dir_data.pack(src_path, dir, pack_file_stream, DEFAULT_ROOT_DIR)) {
             perror("pack()");
             std::println(stderr, "pack(): {}", strerror(errno));
@@ -147,6 +149,7 @@ int main(int argc, char** argv) {
             fclose(pack_file_stream);
             return 1;
         }
+        */
 
         // Cleanup
         closedir(dir);

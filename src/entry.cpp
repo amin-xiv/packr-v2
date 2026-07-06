@@ -3,12 +3,10 @@
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <filesystem>
-#include <stdexcept>
-#include <string_view>
+// #include <stdexcept>
 #include <string>
 #include <sys/stat.h>
 #include <cstring>
-#include <stdexcept>
 #include <print>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -21,49 +19,34 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
-dir_entry::dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count) {
-    this->child_entry_count = 0;
-    this->child_file_count = 0;
-    this->child_dir_count = 0;
+dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count) {
+    if(!fs::exists(dir.symlink_status())) {
+        this->success = false;
+        return;
+    }
+    // TODO: Add support for a symbolic dir_entry
 
-    this->total_file_count = 0;
-    this->total_dir_count = 0;
-    this->total_entry_count = 0;
+    // Other members are default intialized during construction
+
     this->entry_class = (nest_count - 1) == 0 ? entry_class_t::CHILD_ENT : entry_class_t::NESTED_ENT;
-    this->size = 0;
-    add_dirname(this, "", std::string{dir_str.data(), dir_str.size()});
+    add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
+    this->mode = std::to_underlying(dir.symlink_status().permissions());
 
-    struct dirent* entry;
-    struct stat ent_stat;
+    //    struct dirent* entry;
+    //   struct stat ent_stat;
 
-    while((entry = readdir(dir)) != nullptr) {
-        if(std::strcmp(entry->d_name, ".") == 0 || std::strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
+    for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
+        std::string full_path{entry.path().string()};
 
-        std::optional<std::string> full_path{join_to_path(std::string{entry->d_name}, std::string{dir_str})};
-        if(!full_path) { // aka !full_path.has_value()
-            this->success = false;
-            throw std::invalid_argument{"Couldn't join pathes!"};
-        }
+        std::println("current entry: {}", full_path);
 
-        std::string full_path_str{full_path.value()}; // So that we don't call full_path.value() each time
-        std::println("current entry: {}", full_path.value());
+        // if(lstat(full_path_str.data(), &ent_stat) == -1) {
+        //  this->success = false;
+        // return;
+        //}
 
-        if(lstat(full_path_str.data(), &ent_stat) == -1) {
-            this->success = false;
-            return;
-        }
-
-        if(S_ISDIR(ent_stat.st_mode)) {
-            DIR* dir_inner{opendir(full_path_str.data())};
-
-            if(dir_inner == nullptr) {
-                this->success = false;
-                return;
-            }
-
-            dir_entry data_inner{dir_inner, full_path_str, nest_count + 2};
+        if(fs::is_directory(entry.symlink_status())) {
+            dir_entry data_inner{entry, nest_count + 2};
 
             if(!data_inner.success) {
                 this->success = false;
@@ -86,36 +69,41 @@ dir_entry::dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count) {
                 this->child_dir_count++;
             }
 
-            closedir(dir_inner);
-
             std::println("added_dirname: {}", this->dirname);
         } else {
-            this->size += ent_stat.st_size;
-            this->total_entry_count++;
-            this->total_file_count++;
+            if(fs::is_regular_file(entry.symlink_status())) {
+                this->size += entry.file_size();
+                this->total_entry_count++;
+                this->total_file_count++;
 
-            // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
-            // we can increment child counts
-            if(nest_count == 0) {
-                this->child_entry_count++;
-                this->child_file_count++;
+                // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
+                // we can increment child counts
+                if(nest_count == 0) {
+                    this->child_entry_count++;
+                    this->child_file_count++;
+                }
+
+                //  TODO: Add support for symlinks also here
+
+            } else {
             }
         }
     }
 
     // get timestamps and mode
-    if(nest_count == 0) {
-        struct stat root_stat;
-        const char* dir_str_ptr{dir_str.data()};
-        if(lstat(dir_str_ptr, &root_stat) == -1) {
-            return;
-        }
+    // if(nest_count == 0) {
+    //        struct stat root_stat;
+    //       const char* dir_str_ptr{dir_str.data()};
+    //      if(lstat(dir_str_ptr, &root_stat) == -1) {
+    //         return;
+    //   }
 
-        this->acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
-        this->mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
-        this->sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
-        this->mode = root_stat.st_mode;
-    }
+    /*
+    this->acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
+    this->mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
+    this->sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
+    */
+    //}
 
     this->success = true;
 }
@@ -156,36 +144,26 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_co
     this->mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
     this->success = true;
 }
-
-bool dir_entry::pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u32 nest_count) {
+bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts, const u32 nest_count) {
     //(for future use) bool no_metadata{(opts & P_NOMETADATA) != 0};
     dir_entry dir_header_copy{*this};
-
-    const char* dir_path_ptr{dir_path.data()};
-    DIR* dir{opendir(dir_path_ptr)};
-    if(dir == nullptr) {
-        return false;
-    }
 
     // write the dir header upfront only if it's the intial pack header(nest_count
     // = 0)
     if(nest_count == 0) {
         if(fwrite(this, sizeof(dir_entry), 1, pack_file) < 1) {
-            closedir(dir);
             return false;
         }
     }
 
     special_marker dir_marker_start = {.type = ENT_DIR_START};
     if(fwrite(&dir_marker_start, sizeof(special_marker), 1, pack_file) < 1) {
-        closedir(dir);
         return false;
     }
 
     // i.e. if nest_count > 0
     if(nest_count > 0) {
         if(fwrite(this, sizeof(dir_entry), 1, pack_file) < 1) {
-            closedir(dir);
             return false;
         }
 
@@ -194,46 +172,27 @@ bool dir_entry::pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u3
 
     struct stat ent_stat;
     struct dirent* curr_ent;
-    while((curr_ent = readdir(dir)) != nullptr) {
-        if(strcmp(curr_ent->d_name, ".") == 0 || strcmp(curr_ent->d_name, "..") == 0) {
-            continue;
-        }
+    for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
+        const std::string full_path{curr_ent.path().string()};
 
-        std::optional<std::string> full_path{join_to_path(std::string{curr_ent->d_name}, std::string{dir_path})};
-        if(!full_path) {
-            closedir(dir);
-            return false;
-        }
+        std::println("current entry to pack: {}", full_path);
 
-        std::string full_path_str{full_path.value()};
-        std::println("current entry to pack: {}", full_path_str);
+        // if(lstat(full_path_str.data(), &ent_stat) == -1) {
+        //    closedir(dir);
+        //   return false;
+        //}
 
-        if(lstat(full_path_str.data(), &ent_stat) == -1) {
-            closedir(dir);
-            return false;
-        }
-
-        if(S_ISDIR(ent_stat.st_mode)) {
-            DIR* dir_inner{opendir(full_path_str.data())};
-            if(dir_inner == nullptr) {
-                closedir(dir);
-                return false;
-            }
-
+        if(fs::is_directory(curr_ent.symlink_status())) {
             // dir_entry type because pack_header is just a typedef of 'struct
-            // dir_entry'
-            dir_entry dir_data_inner{dir_inner, full_path_str, DEFAULT_ROOT_DIR};
+            //
+            dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
             std::println("(fresh)dir_data_inner->dirname: {}", dir_data_inner.dirname);
-            std::println("full_path_str: {}", full_path_str);
+            std::println("full_path_str: {}", full_path);
             if(!dir_data_inner.success) {
-                closedir(dir_inner);
-                closedir(dir);
                 return false;
             }
 
-            if(!dir_data_inner.pack_dir(full_path_str, pack_file, opts, nest_count + 1)) {
-                closedir(dir_inner);
-                closedir(dir);
+            if(!dir_data_inner.pack_dir(curr_ent, pack_file, opts, nest_count + 1)) {
                 return false;
             }
 
@@ -245,35 +204,32 @@ bool dir_entry::pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u3
                 dir_header_copy.child_dir_count--;
             }
 
-            closedir(dir_inner);
+            // TODO: fix this
 
-        } else if(S_ISLNK(ent_stat.st_mode)) {
+        } /*else if(S_ISLNK(ent_stat.st_mode)) {
             // i don't wanna handle any symlinks rn
             continue;
-        } else {
-            file_entry file_data{full_path_str, nest_count + 1};
+        }*/
+        else {
+            file_entry file_data{full_path, nest_count + 1};
             if(!file_data.success) {
-                closedir(dir);
                 return false;
             }
 
             special_marker file_marker = {.type = ENT_FILE};
             if(fwrite(&file_marker, sizeof(special_marker), 1, pack_file) < 1) {
-                closedir(dir);
                 return false;
             }
 
             if(fwrite(&file_data, sizeof(file_entry), 1, pack_file) < 1) {
-                closedir(dir);
                 return false;
             }
 
             // check if file has actually some data and size != 0 before writing file
             // contents
             if(file_data.size > 0) {
-                FILE* file_stream{fopen(full_path_str.data(), "r")};
+                FILE* file_stream{fopen(full_path.data(), "r")};
                 if(file_stream == nullptr) {
-                    closedir(dir);
                     return false;
                 }
 
@@ -282,13 +238,11 @@ bool dir_entry::pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u3
                 read_buff.reserve(file_data.size);
                 memset(read_buff.data(), '\0', file_data.size);
                 if(fread(read_buff.data(), file_data.size, 1, file_stream) < 1) {
-                    closedir(dir);
                     fclose(file_stream);
                     return false;
                 }
 
                 if(fwrite(read_buff.data(), file_data.size, 1, pack_file) < 1) {
-                    closedir(dir);
                     fclose(file_stream);
                     return false;
                 }
@@ -310,22 +264,20 @@ bool dir_entry::pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u3
 
     special_marker dir_marker_end{.type = ENT_DIR_END};
     if(fwrite(&dir_marker_end, sizeof(special_marker), 1, pack_file) < 1) {
-        closedir(dir);
         return false;
     }
 
     sync(); // to ensure data is actually residing on the file
-    closedir(dir);
     return true;
 }
 
-bool pack_header::pack(std::string_view dir_path, DIR* dir, FILE* pack_file, u8 opts) {
+bool pack_header::pack(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts) {
     special_marker pack_start_marker{.type = PACK_START};
     if(fwrite(&pack_start_marker, sizeof(special_marker), 1, pack_file) < 1) {
         return false;
     }
 
-    if(!pack_dir(dir_path, pack_file, opts, DEFAULT_ROOT_DIR)) {
+    if(!pack_dir(dir, pack_file, opts, DEFAULT_ROOT_DIR)) {
         return false;
     }
 

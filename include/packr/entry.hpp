@@ -1,10 +1,10 @@
 #pragma once
 
+#include <filesystem>
 #include <packr/types.hpp>
 #include <packr/fs_node.hpp>
 #include <climits>
 #include <dirent.h>
-#include <string_view>
 
 #define ENT_DIR_START ((uint8_t)0x01)
 #define ENT_DIR_END ((uint8_t)0x02)
@@ -41,7 +41,7 @@ struct file_entry {
 struct dir_entry {
     // Constructors
     dir_entry() = default;
-    dir_entry(DIR* dir, std::string_view dir_str, u32 nest_count);
+    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count);
 
     char dirname[NAME_MAX]{};
     char secondary_path[PATH_MAX]; // Holds the path of the target directory if this is a symlink
@@ -64,7 +64,8 @@ struct dir_entry {
 
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack
     // file)
-    [[nodiscard]] bool pack_dir(std::string_view dir_path, FILE* pack_file, u8 opts, u32 nest_count);
+    [[nodiscard]] bool pack_dir(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts,
+                                const u32 nest_count);
 
     // Unpacks a given directory, by reading data from a pack_file
     [[nodiscard]] static bool unpack_dir(FILE* pack_file, u8 opts, u32 nest_count);
@@ -80,7 +81,7 @@ struct pack_header : public dir_entry {
     using dir_entry::dir_entry;
 
     // Initiates the packing process(calls pack_dir)
-    [[nodiscard]] bool pack(std::string_view dir_path, DIR* dir, FILE* pack_file, u8 opts);
+    [[nodiscard]] bool pack(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts);
 };
 
 } // namespace packr

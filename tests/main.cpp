@@ -118,7 +118,7 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     ASSERT_TRUE(dir_fs.exists());
 
     // dir_entry initialization
-    dir_entry dirEntry{opendir(joined.data()), joined, DEFAULT_ROOT_DIR};
+    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR};
 
     ASSERT_TRUE(dirEntry.success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.dirname);

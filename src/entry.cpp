@@ -353,11 +353,6 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
                     return false;
                 }
 
-                // Verify entry is actually a directory
-                if(!S_ISDIR(curr_dir_data.mode)) {
-                    return false;
-                }
-
                 std::println("unpacked dirname: {}", curr_dir_data.dirname);
                 const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
                 if(curr_dir_data.dirname_length < 1) {
@@ -436,11 +431,6 @@ bool dir_entry::unpack(FILE* pack_file, u8 opts, u32 nest_count) {
     if(initial_dir_start_marker.type != ENT_DIR_START) {
         return false;
     }
-
-    // Verify whether data is corrupted or no
-    if(!S_ISDIR(pack_header.mode)) {
-        return false;
-    };
 
     // Making the root directory and changing into it
     if(mkdir(pack_header.dirname, pack_header.mode) == -1) {

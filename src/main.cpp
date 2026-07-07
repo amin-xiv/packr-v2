@@ -2,6 +2,7 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <fcntl.h>
+#include <filesystem>
 #include <cstring>
 #include <getopt.h>
 #include <dirent.h>
@@ -9,6 +10,10 @@
 #include <cerrno>
 #include <string>
 #include <print>
+
+// TODO: Why isn't the packing(*apparently* working)/unpacking functionality working??
+
+namespace fs = std::filesystem;
 
 static void print_help();
 
@@ -89,17 +94,14 @@ int main(int argc, char** argv) {
     }
 
     if(operation == packr::OP_TYPE::PACK) {
-        DIR* dir{opendir(src_path.data())}; // pointer to target directory stream
-
-        if(dir == nullptr) {
-            std::println("Can't access directory: ", std::strerror(errno));
-
-        } else {
-            std::println("Source directory found!");
+        // packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
+        fs::directory_entry dir_ent{src_path};
+        if(!fs::is_directory(dir_ent)) {
+            std::println("Target is NOT a directory!");
+            return 1;
         }
 
-        // packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
-        packr::pack_header dir_data{};
+        packr::pack_header dir_data{dir_ent, DEFAULT_ROOT_DIR};
         if(!dir_data.success) {
             std::println("pack_header constructor: {}", std::strerror(errno));
             return 1;
@@ -136,23 +138,18 @@ int main(int argc, char** argv) {
 
         FILE* pack_file_stream{fopen(pack_file_str.data(), "w+")};
         if(pack_file_stream == nullptr) {
-            closedir(dir);
             std::println("fdopen(): {}", std::strerror(errno));
             return 1;
         }
 
-        /*
-        if(!dir_data.pack(src_path, dir, pack_file_stream, DEFAULT_ROOT_DIR)) {
+        if(!dir_data.pack(dir_ent, pack_file_stream, DEFAULT_ROOT_DIR)) {
             perror("pack()");
             std::println(stderr, "pack(): {}", strerror(errno));
-            closedir(dir);
             fclose(pack_file_stream);
             return 1;
         }
-        */
 
         // Cleanup
-        closedir(dir);
         fclose(pack_file_stream);
     } else {
         FILE* pack_file{fopen(src_path.data(), "r")};

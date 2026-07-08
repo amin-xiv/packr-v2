@@ -2,13 +2,9 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <packr/fs_node.hpp>
-#include <fcntl.h>
 #include <filesystem>
 #include <cstring>
 #include <getopt.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <cerrno>
 #include <string>
 #include <print>
 
@@ -74,19 +70,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if(*(src_path.data()) == '/') {
-        // path_absolute = true;
-    } else {
-        char* cwd = getcwd(nullptr, 0);
-        std::optional<std::string> src_path_temp{packr::join_to_path(src_path, cwd)};
-        if(!src_path_temp) {
-            return 1;
-        }
-
-        src_path = src_path_temp.value();
-        free(cwd);
-        std::println("target: {}", src_path);
+    if(!packr::curate_src_path(src_path)) {
+        return 1;
     }
+    std::println("target: {}", src_path);
 
     if(src_path.back() == '/') {
         src_path.pop_back(); // To so that functions such as add_dirname..etc don't mess up(as they need the index of the last /)
@@ -109,35 +96,13 @@ int main(int argc, char** argv) {
             packr::add_dirname(&dir_data, named_as, src_path);
         }
 
-        std::println("dir name: {}", static_cast<char*>(dir_data.dirname));
-        std::println("dir name length: {}", static_cast<packr::u16>(dir_data.dirname_length));
-        std::println("dir size is: {}", static_cast<packr::u64>(dir_data.size));
+        print_dir_data(dir_data);
 
-        std::println("total_dir_count: {}", static_cast<packr::u64>(dir_data.total_dir_count));
-        std::println("total_file_count: {}", static_cast<packr::u64>(dir_data.total_file_count));
-        std::println("total_entry_count: {}", static_cast<packr::u64>(dir_data.total_entry_count));
+        std::string pack_filename{packr::create_pack_filename(dir_data)};
+        std::println("pack filename: {}", pack_filename);
 
-        std::println("child_dir_count: {}", static_cast<packr::u64>(dir_data.child_dir_count));
-        std::println("child_file_count: {}", static_cast<packr::u64>(dir_data.child_file_count));
-        std::println("child_entry_count: {}", static_cast<packr::u64>(dir_data.child_entry_count));
+        packr::File_W pack_file_stream{fs::directory_entry(pack_filename)};
 
-        std::println("last access time: {}", static_cast<packr::u64>(dir_data.acc_time));
-        std::println("last modification time: {}", static_cast<packr::u64>(dir_data.mod_time));
-        std::println("last status change time: {}", static_cast<packr::u64>(dir_data.sc_time));
-        std::println("mode: {}", static_cast<packr::u64>(dir_data.mode));
-
-        const std::string extension{".packr"};
-        std::string pack_file_str{};
-        pack_file_str.reserve(extension.length() + strlen(dir_data.dirname));
-
-        pack_file_str += dir_data.dirname;
-        pack_file_str += extension;
-
-        std::println("pack file str: {}", pack_file_str);
-
-        packr::File_W pack_file_stream{fs::directory_entry(pack_file_str)};
-
-        std::println("EXISTS: {}", pack_file_stream.entry_obj().exists());
         if(!pack_file_stream.setup_stream(packr::open_type::fresh)) {
             std::println("FAILED TO SETUP STREAM");
             return 1;
@@ -149,7 +114,6 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        // Cleanup
     } else {
         packr::File_R pack_file{fs::directory_entry(src_path)};
         if(!pack_file.setup_stream(packr::open_type::exists)) {

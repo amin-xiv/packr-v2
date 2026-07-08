@@ -1,8 +1,6 @@
-#include <filesystem>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
-#include <cstddef>
-#include <system_error>
+#include <print>
 #include <unistd.h>
 #include <cstring>
 #include <optional>
@@ -66,6 +64,51 @@ u64 get_dir_size(const std::filesystem::directory_entry& dir) {
     }
 
     return size;
+}
+
+void print_dir_data(const dir_entry& dir_data) noexcept {
+    std::println("dir name: {}", static_cast<const char*>(dir_data.dirname));
+    std::println("dir name length: {}", static_cast<packr::u16>(dir_data.dirname_length));
+    std::println("dir size is: {}", static_cast<packr::u64>(dir_data.size));
+
+    std::println("total_dir_count: {}", static_cast<packr::u64>(dir_data.total_dir_count));
+    std::println("total_file_count: {}", static_cast<packr::u64>(dir_data.total_file_count));
+    std::println("total_entry_count: {}", static_cast<packr::u64>(dir_data.total_entry_count));
+
+    std::println("child_dir_count: {}", static_cast<packr::u64>(dir_data.child_dir_count));
+    std::println("child_file_count: {}", static_cast<packr::u64>(dir_data.child_file_count));
+    std::println("child_entry_count: {}", static_cast<packr::u64>(dir_data.child_entry_count));
+
+    std::println("last access time: {}", static_cast<packr::u64>(dir_data.acc_time));
+    std::println("last modification time: {}", static_cast<packr::u64>(dir_data.mod_time));
+    std::println("last status change time: {}", static_cast<packr::u64>(dir_data.sc_time));
+    std::println("mode: {}", static_cast<packr::u64>(dir_data.mode));
+}
+
+bool curate_src_path(std::string& src_path) noexcept {
+    if(*(src_path.data()) != '/') {
+        char* cwd = getcwd(nullptr, 0);
+        std::optional<std::string> src_path_temp{packr::join_to_path(src_path, cwd)};
+        if(!src_path_temp) {
+            return false;
+        }
+
+        src_path = src_path_temp.value();
+        free(cwd);
+        return true;
+    }
+
+    return true;
+}
+
+std::string create_pack_filename(const dir_entry& dir_data) {
+    static constexpr std::string extension{".packr"};
+    std::string pack_filename{};
+    pack_filename.reserve(extension.length() + strlen(dir_data.dirname));
+
+    pack_filename += dir_data.dirname;
+    pack_filename += extension;
+    return pack_filename;
 }
 
 } // namespace packr

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <filesystem>
 #include <packr/types.hpp>
 #include <packr/fs_node.hpp>
+#include <filesystem>
 #include <climits>
-#include <dirent.h>
 
 #define ENT_DIR_START ((uint8_t)0x01)
 #define ENT_DIR_END ((uint8_t)0x02)

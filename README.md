@@ -42,7 +42,6 @@ Given a directory, the tool packs it into a single ``.packr`` file, that can be 
 * For now, the program skips any symlinks
 
 ## Goals
-- [ ] Simplify main()
 - [ ] Add support for symlinks
 - [ ] Add much more tests
 - [ ] Corruption detection with hashes

@@ -170,8 +170,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         if(!pack_file.write(reinterpret_cast<char*>(this), sizeof(dir_entry))) {
             return false;
         }
-
-        std::println("(to write)dir_data_inner->dirname: {}", this->dirname);
     }
 
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
@@ -181,8 +179,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         if(fs::is_directory(curr_ent.symlink_status())) {
             dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
-            std::println("(fresh)dir_data_inner->dirname: {}", dir_data_inner.dirname);
-            std::println("full_path_str: {}", full_path);
             if(!dir_data_inner.success) {
                 return false;
             }
@@ -241,9 +237,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
                     return false;
                 }
 
-                sync(); // to ensure data is actually residing on the file before next
-                        // iteration
-
                 dir_header_copy.total_file_count--;
                 dir_header_copy.total_entry_count--;
 
@@ -256,12 +249,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     special_marker dir_marker_end{.type = ENT_DIR_END};
-    if(!pack_file.write(reinterpret_cast<char*>(&dir_marker_end), sizeof(special_marker))) {
-        return false;
-    }
-
-    sync(); // to ensure data is actually residing on the file
-    return true;
+    return pack_file.write(reinterpret_cast<char*>(&dir_marker_end), sizeof(special_marker)); // bool
 }
 
 bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts) {
@@ -341,7 +329,6 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     return false;
                 }
 
-                std::println("unpacked dirname: {}", curr_dir_data.dirname);
                 const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
                 if(curr_dir_data.dirname_length < 1) {
                     // Copying it into curr_dir_data.dirname so a flag isn't needed

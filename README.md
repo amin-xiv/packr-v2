@@ -43,6 +43,7 @@ Given a directory, the tool packs it into a single ``.packr`` file, that can be 
 
 ## Goals
 - [ ] Rewrite the core logic using `std::filesystem`
+- [ ] Simplify main()
 - [ ] Add support for symlinks
 - [ ] Add much more tests
 - [ ] Corruption detection with hashes

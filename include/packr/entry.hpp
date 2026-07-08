@@ -20,7 +20,7 @@ namespace packr {
 struct file_entry {
     // Constructors
     file_entry() = default;
-    file_entry(const std::filesystem::path& file_path, const u32 nest_count);
+    file_entry(const std::filesystem::path& file_path);
 
     char filename[NAME_MAX]{};
     char secondary_path[PATH_MAX]; // To store symlink target paths, block file paths..etc
@@ -71,7 +71,7 @@ struct dir_entry {
     [[nodiscard]] static bool unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count);
 
     // Unpacks a given pack file(calls unpack_dir)
-    [[nodiscard]] static bool unpack(File_R& pack_file, const u8 opts, const u32 nest_count);
+    [[nodiscard]] static bool unpack(File_R& pack_file, const u8 opts);
 
 } __attribute__((packed));
 

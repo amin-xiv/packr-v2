@@ -24,7 +24,7 @@ class Directory {
     std::string error_message;
 };
 
-// Represents files, acts like a FILE*
+// Represents files, acts kinda like a FILE*
 class File {
   public:
     File() = delete;
@@ -32,10 +32,11 @@ class File {
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     operator bool() const noexcept;
+    void refresh() noexcept;
 
   protected:
     const std::filesystem::path file_path;
-    const std::filesystem::directory_entry file;
+    std::filesystem::directory_entry file;
     file_type type;
     std::string secondary_path; // points to block device path, target path(if symlink)..etc
     bool is_valid{};
@@ -47,7 +48,7 @@ class File_R : public File {
   public:
     using File::File; // Inherits constructor from File class
 
-    [[nodiscard]] bool setup_stream() noexcept;
+    [[nodiscard]] bool setup_stream(const open_type type);
     [[nodiscard]] bool read(char* buffer, std::streamsize count);
 
   private:
@@ -59,7 +60,7 @@ class File_W : public File {
   public:
     using File::File; // Inherits constructor from File class
 
-    [[nodiscard]] bool setup_stream() noexcept;
+    [[nodiscard]] bool setup_stream(const open_type type);
     [[nodiscard]] bool write(char* buffer, std::streamsize count);
 
   private:

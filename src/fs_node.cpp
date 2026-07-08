@@ -82,11 +82,25 @@ File::operator bool() const noexcept {
     return this->is_valid;
 }
 
-bool File_R::setup_stream() noexcept {
-    // TODO: find out what to do with this
-    // if(!fs::exists(this->entry_obj().symlink_status())) {
-    //   return false;
-    //}
+void File::refresh() noexcept {
+    // dummy error code
+    std::error_code err;
+    this->file.refresh(err);
+}
+
+bool File_R::setup_stream(const open_type type) {
+    // dummy error_code
+
+    if(type == open_type::fresh) {
+        this->stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
+        this->refresh();
+        return this->stream.is_open();
+    }
+
+    // Check if the file exists
+    if(!fs::exists(this->entry_obj().symlink_status())) {
+        return false;
+    }
 
     this->stream.open(this->path_obj().string(), std::ios::binary);
     return this->stream.is_open();
@@ -101,11 +115,17 @@ bool File_R::read(char* buffer, std::streamsize count) {
     return true;
 }
 
-bool File_W::setup_stream() noexcept {
-    // TODO: find out what to do with this
-    // if(!fs::exists(this->entry_obj().symlink_status())) {
-    //   return false;
-    //}
+bool File_W::setup_stream(const open_type type) {
+    if(type == open_type::fresh) {
+        this->stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
+        this->refresh();
+        return this->stream.is_open();
+    }
+
+    // Check if the file exists
+    if(!fs::exists(this->entry_obj().symlink_status())) {
+        return false;
+    }
 
     this->stream.open(this->path_obj().string(), std::ios::binary);
     return this->stream.is_open();

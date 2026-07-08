@@ -150,7 +150,7 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     ASSERT_TRUE(file_fs.exists()) << file_fs.path().string();
 
     // dir_entry initialization
-    file_entry fileEntry{file_fs.path().string(), DEFAULT_ROOT_DIR};
+    file_entry fileEntry{file_fs.path().string()};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such

@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
         std::println("mode: {}", static_cast<packr::u64>(dir_data.mode));
 
         const std::string extension{".packr"};
-        std::string pack_file_str{}; // +1 for the \0
+        std::string pack_file_str{};
         pack_file_str.reserve(extension.length() + strlen(dir_data.dirname));
 
         pack_file_str += dir_data.dirname;
@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
         packr::File_W pack_file_stream{fs::directory_entry(pack_file_str)};
 
         std::println("EXISTS: {}", pack_file_stream.entry_obj().exists());
-        if(!pack_file_stream.setup_stream()) {
-            std::println(stderr, "FAILED TO SETUP STREAM");
+        if(!pack_file_stream.setup_stream(packr::open_type::fresh)) {
+            std::println("FAILED TO SETUP STREAM");
             return 1;
         }
 
@@ -152,12 +152,12 @@ int main(int argc, char** argv) {
         // Cleanup
     } else {
         packr::File_R pack_file{fs::directory_entry(src_path)};
-        if(!pack_file.setup_stream()) {
+        if(!pack_file.setup_stream(packr::open_type::exists)) {
             std::println(stderr, "FAILED TO SETUP STREAM");
             return 1;
         }
 
-        if(!packr::dir_entry::unpack(pack_file, 0, DEFAULT_ROOT_DIR)) {
+        if(!packr::dir_entry::unpack(pack_file, 0)) {
             std::println(stderr, "unpack(): {}", strerror(errno));
             return 1;
         }

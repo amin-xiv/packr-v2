@@ -103,7 +103,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     this->success = true;
 }
 
-file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_count) {
+file_entry::file_entry(const std::filesystem::path& file_path) {
     // Dummy error code object to avoid exceptions
     std::error_code err;
 
@@ -174,21 +174,12 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         std::println("(to write)dir_data_inner->dirname: {}", this->dirname);
     }
 
-    struct stat ent_stat;
-    struct dirent* curr_ent;
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
         const std::string full_path{curr_ent.path().string()};
 
         std::println("current entry to pack: {}", full_path);
 
-        // if(lstat(full_path_str.data(), &ent_stat) == -1) {
-        //    closedir(dir);
-        //   return false;
-        //}
-
         if(fs::is_directory(curr_ent.symlink_status())) {
-            // dir_entry type because pack_header is just a typedef of 'struct
-            //
             dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
             std::println("(fresh)dir_data_inner->dirname: {}", dir_data_inner.dirname);
             std::println("full_path_str: {}", full_path);
@@ -215,7 +206,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             continue;
         }*/
         else {
-            file_entry file_data{full_path, nest_count + 1};
+            file_entry file_data{full_path};
             if(!file_data.success) {
                 return false;
             }
@@ -233,7 +224,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             // contents
             if(file_data.size > 0) {
                 File_R file_stream{full_path};
-                if(!file_stream.setup_stream()) {
+                if(!file_stream.setup_stream(open_type::exists)) {
                     return false;
                 }
 
@@ -323,7 +314,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 File_W target_file{curr_file_data.filename};
-                if(!target_file.setup_stream()) {
+                if(!target_file.setup_stream(open_type::fresh)) {
                     return false;
                 }
 
@@ -331,7 +322,6 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     std::string file_data_buff{};
                     file_data_buff.reserve(curr_file_data.size);
 
-                    // TODO: check if this conversion is valid
                     if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.size))) {
                         return false;
                     }
@@ -405,7 +395,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
     return true;
 }
 
-bool dir_entry::unpack(File_R& pack_file, const u8 opts, const u32 nest_count) {
+bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     // Reading PACK_START
     special_marker pack_start_marker;
     if(!pack_file.read(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
@@ -423,7 +413,6 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts, const u32 nest_count) {
 
     // This marks the start of the target root directory
     special_marker initial_dir_start_marker;
-    // TODO: also check this conversion
     if(!pack_file.read(reinterpret_cast<char*>(&initial_dir_start_marker),
                        static_cast<std::streamsize>(sizeof(special_marker)))) {
         return false;

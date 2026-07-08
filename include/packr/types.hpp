@@ -38,6 +38,11 @@ enum class entry_class_t : u8 {
     NESTED_ENT = 0x80, // 128
 };
 
+enum class open_type : u8 {
+    exists,
+    fresh // well I didn't call it new since there's already the 'new' keyword
+};
+
 // This is included BEFORE entry headers(to know how much memory to read)
 struct special_marker {
     u8 type; // Should only be set by ENT_* and PACK_* macros and binary ORed with enum entry_class

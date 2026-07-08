@@ -44,6 +44,7 @@ Given a directory, the tool packs it into a single ``.packr`` file, that can be 
 ## Goals
 - [ ] Add support for symlinks
 - [ ] Add much more tests
+- [ ] Buffer file copying
 - [ ] Corruption detection with hashes
 - [ ] Self-extraction ability
 - [ ] Incremental packing

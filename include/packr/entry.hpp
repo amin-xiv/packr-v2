@@ -64,14 +64,14 @@ struct dir_entry {
 
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack
     // file)
-    [[nodiscard]] bool pack_dir(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts,
+    [[nodiscard]] bool pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts,
                                 const u32 nest_count);
 
     // Unpacks a given directory, by reading data from a pack_file
-    [[nodiscard]] static bool unpack_dir(FILE* pack_file, u8 opts, u32 nest_count);
+    [[nodiscard]] static bool unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count);
 
     // Unpacks a given pack file(calls unpack_dir)
-    [[nodiscard]] static bool unpack(FILE* pack_file, u8 opts, u32 nest_count);
+    [[nodiscard]] static bool unpack(File_R& pack_file, const u8 opts, const u32 nest_count);
 
 } __attribute__((packed));
 
@@ -81,7 +81,7 @@ struct pack_header : public dir_entry {
     using dir_entry::dir_entry;
 
     // Initiates the packing process(calls pack_dir)
-    [[nodiscard]] bool pack(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts);
+    [[nodiscard]] bool pack(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts);
 };
 
 } // namespace packr

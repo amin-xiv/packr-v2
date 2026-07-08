@@ -82,4 +82,42 @@ File::operator bool() const noexcept {
     return this->is_valid;
 }
 
+bool File_R::setup_stream() noexcept {
+    // TODO: find out what to do with this
+    // if(!fs::exists(this->entry_obj().symlink_status())) {
+    //   return false;
+    //}
+
+    this->stream.open(this->path_obj().string(), std::ios::binary);
+    return this->stream.is_open();
+}
+
+bool File_R::read(char* buffer, std::streamsize count) {
+    if(!this->stream.is_open() || buffer == nullptr) {
+        return false;
+    }
+
+    this->stream.read(buffer, count);
+    return true;
+}
+
+bool File_W::setup_stream() noexcept {
+    // TODO: find out what to do with this
+    // if(!fs::exists(this->entry_obj().symlink_status())) {
+    //   return false;
+    //}
+
+    this->stream.open(this->path_obj().string(), std::ios::binary);
+    return this->stream.is_open();
+}
+
+bool File_W::write(char* buffer, std::streamsize count) {
+    if(!this->stream.is_open() || buffer == nullptr) {
+        return false;
+    }
+
+    this->stream.write(buffer, count);
+    return true;
+}
+
 } // namespace packr

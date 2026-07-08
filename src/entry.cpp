@@ -1,3 +1,4 @@
+#include <ios>
 #include <packr/entry.hpp>
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
@@ -147,26 +148,26 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u32 nest_co
     this->mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
     this->success = true;
 }
-bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts, const u32 nest_count) {
+bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
     //(for future use) bool no_metadata{(opts & P_NOMETADATA) != 0};
     dir_entry dir_header_copy{*this};
 
     // write the dir header upfront only if it's the intial pack header(nest_count
     // = 0)
     if(nest_count == 0) {
-        if(fwrite(this, sizeof(dir_entry), 1, pack_file) < 1) {
+        if(!pack_file.write(reinterpret_cast<char*>(this), sizeof(dir_entry))) {
             return false;
         }
     }
 
     special_marker dir_marker_start = {.type = ENT_DIR_START};
-    if(fwrite(&dir_marker_start, sizeof(special_marker), 1, pack_file) < 1) {
+    if(!pack_file.write(reinterpret_cast<char*>(&dir_marker_start), sizeof(special_marker))) {
         return false;
     }
 
     // i.e. if nest_count > 0
     if(nest_count > 0) {
-        if(fwrite(this, sizeof(dir_entry), 1, pack_file) < 1) {
+        if(!pack_file.write(reinterpret_cast<char*>(this), sizeof(dir_entry))) {
             return false;
         }
 
@@ -220,19 +221,19 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack
             }
 
             special_marker file_marker = {.type = ENT_FILE};
-            if(fwrite(&file_marker, sizeof(special_marker), 1, pack_file) < 1) {
+            if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
                 return false;
             }
 
-            if(fwrite(&file_data, sizeof(file_entry), 1, pack_file) < 1) {
+            if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
                 return false;
             }
 
             // check if file has actually some data and size != 0 before writing file
             // contents
             if(file_data.size > 0) {
-                FILE* file_stream{fopen(full_path.data(), "r")};
-                if(file_stream == nullptr) {
+                File_R file_stream{full_path};
+                if(!file_stream.setup_stream()) {
                     return false;
                 }
 
@@ -240,17 +241,15 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack
                 std::string read_buff{};
                 read_buff.reserve(file_data.size);
                 memset(read_buff.data(), '\0', file_data.size);
-                if(fread(read_buff.data(), file_data.size, 1, file_stream) < 1) {
-                    fclose(file_stream);
+                if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.size))) {
                     return false;
                 }
 
-                if(fwrite(read_buff.data(), file_data.size, 1, pack_file) < 1) {
-                    fclose(file_stream);
+                // TODO: file_data.size() must not be greater than std::streamsize
+                if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.size))) {
                     return false;
                 }
 
-                fclose(file_stream);
                 sync(); // to ensure data is actually residing on the file before next
                         // iteration
 
@@ -266,7 +265,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack
     }
 
     special_marker dir_marker_end{.type = ENT_DIR_END};
-    if(fwrite(&dir_marker_end, sizeof(special_marker), 1, pack_file) < 1) {
+    if(!pack_file.write(reinterpret_cast<char*>(&dir_marker_end), sizeof(special_marker))) {
         return false;
     }
 
@@ -274,9 +273,9 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, FILE* pack
     return true;
 }
 
-bool pack_header::pack(const std::filesystem::directory_entry& dir, FILE* pack_file, const u8 opts) {
+bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts) {
     special_marker pack_start_marker{.type = PACK_START};
-    if(fwrite(&pack_start_marker, sizeof(special_marker), 1, pack_file) < 1) {
+    if(!pack_file.write(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
         return false;
     }
 
@@ -285,10 +284,10 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, FILE* pack_f
     }
 
     special_marker pacK_end_marker{.type = PACK_END};
-    return !(fwrite(&pacK_end_marker, sizeof(special_marker), 1, pack_file) < 1);
+    return !(!pack_file.write(reinterpret_cast<char*>(&pacK_end_marker), sizeof(special_marker)));
 }
 
-bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
+bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {
     // 'opts' flag is for future use(maybe lol)
 
     // Flag to keep looping
@@ -296,7 +295,7 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
 
     while(read_pack_file) {
         special_marker curr_marker;
-        if(fread(&curr_marker, sizeof(special_marker), 1, pack_file) < 1) {
+        if(!pack_file.read(reinterpret_cast<char*>(&curr_marker), sizeof(special_marker))) {
             return false;
         }
         switch(curr_marker.type) {
@@ -313,7 +312,7 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
             {
                 /* On its own block to prevent pollution the case() namespace */
                 file_entry curr_file_data;
-                if(fread(&curr_file_data, sizeof(file_entry), 1, pack_file) < 1) {
+                if(!pack_file.read(reinterpret_cast<char*>(&curr_file_data), sizeof(file_entry))) {
                     return false;
                 }
 
@@ -323,8 +322,8 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
                     memcpy(curr_file_data.filename, unnamed_filename, strlen(unnamed_filename));
                 }
 
-                FILE* target_file{fopen(curr_file_data.filename, "w")};
-                if(target_file == nullptr) {
+                File_W target_file{curr_file_data.filename};
+                if(!target_file.setup_stream()) {
                     return false;
                 }
 
@@ -332,15 +331,14 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
                     std::string file_data_buff{};
                     file_data_buff.reserve(curr_file_data.size);
 
-                    if(fread(file_data_buff.data(), curr_file_data.size, 1, pack_file) < 1) {
+                    // TODO: check if this conversion is valid
+                    if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.size))) {
                         return false;
                     }
 
-                    if(fwrite(file_data_buff.data(), curr_file_data.size, 1, target_file) < 1) {
+                    if(!target_file.write(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.size))) {
                         return false;
                     }
-
-                    fclose(target_file);
                 }
             }
             break;
@@ -349,7 +347,7 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
             {
                 /* On its own block to prevent pollution the case() namespace */
                 dir_entry curr_dir_data;
-                if(fread(&curr_dir_data, sizeof(dir_entry), 1, pack_file) < 1) {
+                if(!pack_file.read(reinterpret_cast<char*>(&curr_dir_data), sizeof(dir_entry))) {
                     return false;
                 }
 
@@ -407,10 +405,10 @@ bool dir_entry::unpack_dir(FILE* pack_file, u8 opts, u32 nest_count) {
     return true;
 }
 
-bool dir_entry::unpack(FILE* pack_file, u8 opts, u32 nest_count) {
+bool dir_entry::unpack(File_R& pack_file, const u8 opts, const u32 nest_count) {
     // Reading PACK_START
     special_marker pack_start_marker;
-    if(fread(&pack_start_marker, sizeof(special_marker), 1, pack_file) < 1) {
+    if(!pack_file.read(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
         return false;
     }
     if(pack_start_marker.type != PACK_START) {
@@ -419,13 +417,15 @@ bool dir_entry::unpack(FILE* pack_file, u8 opts, u32 nest_count) {
 
     // Reading pack_header
     dir_entry pack_header;
-    if(fread(&pack_header, sizeof(dir_entry), 1, pack_file) < 1) {
+    if(!pack_file.read(reinterpret_cast<char*>(&pack_header), sizeof(dir_entry))) {
         return false;
     }
 
     // This marks the start of the target root directory
     special_marker initial_dir_start_marker;
-    if(fread(&initial_dir_start_marker, sizeof(special_marker), 1, pack_file) < 1) {
+    // TODO: also check this conversion
+    if(!pack_file.read(reinterpret_cast<char*>(&initial_dir_start_marker),
+                       static_cast<std::streamsize>(sizeof(special_marker)))) {
         return false;
     }
     if(initial_dir_start_marker.type != ENT_DIR_START) {

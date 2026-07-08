@@ -2,6 +2,7 @@
 
 #include <packr/types.hpp>
 #include <filesystem>
+#include <fstream>
 
 namespace packr {
 
@@ -32,13 +33,37 @@ class File {
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     operator bool() const noexcept;
 
-  private:
+  protected:
     const std::filesystem::path file_path;
     const std::filesystem::directory_entry file;
     file_type type;
     std::string secondary_path; // points to block device path, target path(if symlink)..etc
     bool is_valid{};
     std::string error_message;
+};
+
+// Derrived from 'File' to allow strictly reading from the file
+class File_R : public File {
+  public:
+    using File::File; // Inherits constructor from File class
+
+    [[nodiscard]] bool setup_stream() noexcept;
+    [[nodiscard]] bool read(char* buffer, std::streamsize count);
+
+  private:
+    std::ifstream stream;
+};
+
+// Derrived from 'File' to allow strictly writing to the file
+class File_W : public File {
+  public:
+    using File::File; // Inherits constructor from File class
+
+    [[nodiscard]] bool setup_stream() noexcept;
+    [[nodiscard]] bool write(char* buffer, std::streamsize count);
+
+  private:
+    std::ofstream stream;
 };
 
 } // namespace packr

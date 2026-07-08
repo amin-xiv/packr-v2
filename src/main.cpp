@@ -1,6 +1,7 @@
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
+#include <packr/fs_node.hpp>
 #include <fcntl.h>
 #include <filesystem>
 #include <cstring>
@@ -10,8 +11,6 @@
 #include <cerrno>
 #include <string>
 #include <print>
-
-// TODO: Why isn't the packing(*apparently* working)/unpacking functionality working??
 
 namespace fs = std::filesystem;
 
@@ -136,35 +135,33 @@ int main(int argc, char** argv) {
 
         std::println("pack file str: {}", pack_file_str);
 
-        FILE* pack_file_stream{fopen(pack_file_str.data(), "w+")};
-        if(pack_file_stream == nullptr) {
-            std::println("fdopen(): {}", std::strerror(errno));
+        packr::File_W pack_file_stream{fs::directory_entry(pack_file_str)};
+
+        std::println("EXISTS: {}", pack_file_stream.entry_obj().exists());
+        if(!pack_file_stream.setup_stream()) {
+            std::println(stderr, "FAILED TO SETUP STREAM");
             return 1;
         }
 
         if(!dir_data.pack(dir_ent, pack_file_stream, DEFAULT_ROOT_DIR)) {
             perror("pack()");
             std::println(stderr, "pack(): {}", strerror(errno));
-            fclose(pack_file_stream);
             return 1;
         }
 
         // Cleanup
-        fclose(pack_file_stream);
     } else {
-        FILE* pack_file{fopen(src_path.data(), "r")};
-        if(pack_file == nullptr) {
-            std::println(stderr, "fopen(): {}", strerror(errno));
+        packr::File_R pack_file{fs::directory_entry(src_path)};
+        if(!pack_file.setup_stream()) {
+            std::println(stderr, "FAILED TO SETUP STREAM");
             return 1;
         }
 
         if(!packr::dir_entry::unpack(pack_file, 0, DEFAULT_ROOT_DIR)) {
-            fclose(pack_file);
             std::println(stderr, "unpack(): {}", strerror(errno));
             return 1;
         }
 
-        fclose(pack_file);
         std::println("unpack sucess");
     }
 

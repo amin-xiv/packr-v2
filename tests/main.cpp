@@ -1,6 +1,8 @@
 #include <packr/utils.hpp>
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
+#include "shared_test_data.hpp"
+#include "helpers.hpp"
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
@@ -13,103 +15,7 @@ namespace fs = std::filesystem;
 
 using namespace packr;
 
-class dirAndFileEntryConstructorData : public testing::Test {
-  protected:
-    dirAndFileEntryConstructorData()
-        : cwd_path(fs::current_path()), cwd_str(cwd_path.string()), dir_name("dummy_dir1"),
-          full_path(join_to_path(dir_name, cwd_str)), joined(cwd_str + '/' + dir_name) {
-    }
-
-    fs::path cwd_path;
-    std::string cwd_str;
-    std::string dir_name;
-    std::optional<std::string> full_path;
-    std::string joined;
-};
-
-TEST_F(dirAndFileEntryConstructorData, joinToPathNormal) {
-    // First test
-    std::string filename1{"file.txt"};
-    std::string directory{"/home/user/desktop/directory"};
-    std::optional<std::string> full_path1{directory + '/' + filename1};
-    std::optional<std::string> joined1{join_to_path(filename1, directory)};
-    EXPECT_EQ(joined1, full_path1.value());
-
-    // Second test
-    std::string filename2{"somerandomfile"};
-    std::string directory2{"/home/user/desktop/directory/"};
-    std::optional<std::string> full_path2{join_to_path(filename2, directory2)};
-    std::string joined2{directory2 + filename2};
-    EXPECT_EQ(joined2, full_path2.value());
-
-    // To make sure no extra '/' is added
-    std::string filename3{"somerandomfile/"};
-    std::string directory3{"/home/user/desktop/directory/"};
-    std::optional<std::string> full_path3{join_to_path(filename3, directory3)};
-    std::string joined3{directory3 + filename3};
-    EXPECT_EQ(joined3, full_path3.value());
-
-    fs::path cwd_path{fs::current_path()};
-    std::string cwd_str{cwd_path.string()};
-
-    // This time a real directory is used, this will be passed on to other tests
-    std::string file_name{"hallo.txt"};
-    std::optional<std::string> full_path4{join_to_path(file_name, cwd_str)};
-    std::string joined4{cwd_str + '/' + file_name};
-    EXPECT_EQ(joined4, full_path4.value());
-
-    // This time a real directory is used, this will be passed on to other tests
-    // This is from the text fixture passed in the first param
-    EXPECT_EQ(joined, full_path.value());
-}
-
-TEST(joinToPath, nullInputs) {
-    std::string filename;
-    std::string path;
-    std::optional<std::string> full_path{join_to_path(filename, path)};
-    EXPECT_FALSE(full_path.has_value());
-}
-
-// "add_dirname" function tests
-TEST(addDirname, withNamedAs) {
-    dir_entry dir_ent{};
-    std::string src_path{"/home/desktop/some_directory"};
-    add_dirname(&dir_ent, "", src_path);
-    std::string test_str{"some_directory"};
-    EXPECT_EQ(test_str, std::string{dir_ent.dirname});
-    EXPECT_EQ(test_str.size(), dir_ent.dirname_length);
-}
-
-TEST(addDirname, noNamedAs) {
-    dir_entry dir_ent{};
-    std::string src_path{"/home/desktop/some_directory"};
-    std::string named_as{"bla bla bla"};
-    add_dirname(&dir_ent, named_as, src_path);
-    EXPECT_EQ(named_as, std::string{dir_ent.dirname});
-    EXPECT_EQ(named_as.length(), dir_ent.dirname_length);
-}
-
-TEST(extractFilename, normal) {
-    std::string path{"/bla/bla/home/desktop/bla/textfile.txt67"};
-    std::string filename{"textfile.txt67"};
-    std::optional<std::string> actual_filename{extract_filename(path)};
-    EXPECT_EQ(filename, actual_filename.value());
-}
-
-TEST(extractFilename, nullInput) {
-    std::string path{};
-    std::optional<std::string> actual_filename{extract_filename(path)};
-    EXPECT_FALSE(actual_filename.has_value());
-}
 TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
-    /*
-     * First, try to use dir_name from joinToPath.normal in a fixture
-     * Obtain the variable dir_name
-     * Obtain the relevant directory information using std::filesystem
-     * Intialize a dir_entry object
-     * Compare the data, that they are equal, IN DETAIL
-     */
-
     // dummy ec object to avoid exceptions
     std::error_code err;
 
@@ -167,16 +73,60 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     EXPECT_EQ(fileEntry.type, file_type::regular);
 }
 
-TEST(specialMarkers, mainTest) {
-    EXPECT_EQ(ENT_DIR_START, 0x01);
-    EXPECT_EQ(ENT_DIR_END, 0x02);
-    EXPECT_EQ(ENT_FILE, 0x04);
-    EXPECT_EQ(PACK_START, 0x08);
-    EXPECT_EQ(PACK_END, 0x10);
+TEST_F(packingAndUnpackingTestdata, packFilename) {
+    std::error_code err;
+    // New directory to contain the results of these tests
+    // make sure that it's already fresh and deleted
+    system(std::string{"rm -rf " + playground_dirname}.data());
+    fs::create_directory(playground_dirname, err);
+    fs::current_path(playground_dirname, err);
+
+    // First three EXPECTS to test that filenames are properly managed
+    ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name + "/"}.data()), 0);
+    EXPECT_TRUE(fs::directory_entry{dummy_dir1_name + extension}.exists());
+    ASSERT_EQ(system(std::string{"rm -rf " + dummy_dir1_name + extension}.data()), 0); // cleanup
+
+    // this time without the trailing '/'
+    ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name}.data()), 0);
+    EXPECT_TRUE(fs::directory_entry{dummy_dir1_name + extension}.exists());
+
+    // this time with a custom name
+    ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name + " -a" + dum_dirname}.data()), 0);
+    EXPECT_TRUE(fs::directory_entry{dum_dirname + extension}.exists());
 }
 
-// Testing other macros and constant values
-TEST(otherMacrosAndConstants, mainTests) {
-    EXPECT_EQ(DEFAULT_ROOT_DIR, 0);
-    EXPECT_EQ(P_NOMETADATA, 0B00000001);
+// Tests that the collected data is the same for each dir
+TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
+    std::error_code err;
+
+    // just in case path returns to {ROOT}/build
+    fs::current_path(playground_dirname, err);
+
+    ASSERT_EQ(system(std::string{packr + " -u -l " + dummy_dir1_name + extension}.data()), 0);
+    fs::directory_entry new_dummy_dir1{"dummy_dir1"};
+    EXPECT_TRUE(new_dummy_dir1.is_directory(err)) << fs::current_path().string();
+
+    ASSERT_EQ(system(std::string{packr + " -u -l " + dum_dirname + extension}.data()), 0);
+    fs::directory_entry dum{"dum"};
+    EXPECT_TRUE(dum.is_directory(err));
+
+    // Now testing actual directory data
+    ASSERT_EQ(get_dir_size(dummy_dir1), get_dir_size(new_dummy_dir1));
+    ASSERT_EQ(get_dir_size(dummy_dir1), get_dir_size(dum));
+
+    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR};
+    dir_entry new_dummy_dir1_data{new_dummy_dir1, DEFAULT_ROOT_DIR};
+    dir_entry dum_data{dum, DEFAULT_ROOT_DIR};
+
+    compare_dir_entries(dummy_dir1_data, new_dummy_dir1_data);
+    compare_dir_entries(dummy_dir1_data, dum_data);
+
+    // As these won't be compared
+    EXPECT_STREQ(dum_data.dirname, "dum");
+    EXPECT_EQ(dum_data.dirname_length, 3);
 }
+/*
+// Tests that the dir structure is the same
+TEST_F(packingAndUnpackingTestdata, unpackBasicDirStructure) {
+}
+*/

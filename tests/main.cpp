@@ -125,8 +125,11 @@ TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
     EXPECT_STREQ(dum_data.dirname, "dum");
     EXPECT_EQ(dum_data.dirname_length, 3);
 }
-/*
+
 // Tests that the dir structure is the same
 TEST_F(packingAndUnpackingTestdata, unpackBasicDirStructure) {
+    // return to playground since with each test path gets reset to the build dir
+    fs::current_path(playground_dirname, err);
+    compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_name));
+    compare_dir_trees(dummy_dir1, fs::directory_entry(dum_dirname));
 }
-*/

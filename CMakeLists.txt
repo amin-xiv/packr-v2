@@ -7,11 +7,14 @@ set(CMAKE_BINARY_DIR "${CMAKE_SOURCE_DIR}/build")
 
 add_executable(packr ./src/entry.cpp ./src/main.cpp ./src/utils.cpp ./src/fs_node.cpp)
 target_include_directories(packr PUBLIC ./include)
+target_link_libraries(packr PRIVATE -fsanitize=undefined)
 add_compile_options(-Wall 
 					-Wextra
-					$<$<CONFIG:Debug>:-O0>
+					-fhardened
 					$<$<CONFIG:Release>:-O2>
+					$<$<CONFIG:Debug>:-Og>
 					$<$<CONFIG:Debug>:-g>
+					$<$<CONFIG:DEBUG>:-fsanitize=undefined>
 				)
 
 include(FetchContent)
@@ -26,8 +29,8 @@ enable_testing()
 add_executable(main_tests ./tests/main.cpp ./src/utils.cpp ./src/entry.cpp ./src/fs_node.cpp)
 add_executable(side_tests ./tests/side_tests.cpp ./src/utils.cpp)
 include(GoogleTest)
-target_link_libraries(main_tests PRIVATE GTest::gtest_main)
-target_link_libraries(side_tests PRIVATE GTest::gtest_main)
+target_link_libraries(main_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
+target_link_libraries(side_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
 target_include_directories(main_tests PRIVATE ./include)
 target_include_directories(side_tests PRIVATE ./include)
 gtest_discover_tests(main_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")

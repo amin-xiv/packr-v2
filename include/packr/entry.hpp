@@ -22,11 +22,11 @@ struct file_entry {
     file_entry(const std::filesystem::path& file_path);
 
     char filename[NAME_MAX]{};
-    char secondary_path[PATH_MAX]; // To store symlink target paths, block file paths..etc
-    u64 size{};                    // file size
-    u64 acc_time{};                // last access time
-    u64 mod_time{};                // last modification time
-    u64 sc_time{};                 // last status change time
+    char secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
+    u64 size{};                      // file size
+    u64 acc_time{};                  // last access time
+    u64 mod_time{};                  // last modification time
+    u64 sc_time{};                   // last status change time
     u16 filename_length{};
     u16 secondary_path_length{};
     u16 mode{};                  // permissions
@@ -43,7 +43,7 @@ struct dir_entry {
     dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count);
 
     char dirname[NAME_MAX]{};
-    char secondary_path[PATH_MAX]; // Holds the path of the target directory if this is a symlink
+    char secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink
     u64 child_entry_count{};
     u64 child_file_count{};
     u64 child_dir_count{};

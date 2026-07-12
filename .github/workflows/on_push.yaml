@@ -1,0 +1,33 @@
+name: on-push-actions
+run-name: run-automated-tests
+
+on: [push]
+
+jobs:
+  Testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: mkdir build
+
+      - run: |
+          sudo apt update
+          sudo apt install -y g++-14
+
+      - run: |
+          cmake -S .. -B . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc-14 \
+            -DCMAKE_CXX_COMPILER=g++-14
+        working-directory: build
+
+      - run: cp -r ../tests/test-data/dummy_dir1 .
+        working-directory: build
+
+      - run: cmake --build . --parallel 8
+        working-directory: build
+
+      - run: ctest  --output-on-failure --rerun-failed
+        working-directory: build

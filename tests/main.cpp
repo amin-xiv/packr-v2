@@ -77,7 +77,7 @@ TEST_F(packingAndUnpackingTestdata, packFilename) {
     std::error_code err;
     // New directory to contain the results of these tests
     // make sure that it's already fresh and deleted
-    system(std::string{"rm -rf " + playground_dirname}.data());
+    ASSERT_NE(system(std::string{"rm -rf " + playground_dirname}.data()), -1); // suppress unused variable warning
     fs::create_directory(playground_dirname, err);
     fs::current_path(playground_dirname, err);
 

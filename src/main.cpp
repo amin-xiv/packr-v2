@@ -25,13 +25,17 @@ int main(int argc, char** argv) {
     while((cur_opt = getopt(argc, argv, "pushl:a:")) != -1) {
         switch(static_cast<char>(cur_opt)) {
         case 'p':
+            if(op_provided) {
+                std::println(stderr, "Can't pack and unpack at the same time!");
+                return 1;
+            }
             op_provided = true;
             operation = packr::OP_TYPE::PACK;
             break;
 
         case 'u':
             if(op_provided) {
-                std::println(stderr, "Can't pack and unpack at the same time!\n");
+                std::println(stderr, "Can't pack and unpack at the same time!");
                 return 1;
             }
             op_provided = true;
@@ -83,13 +87,13 @@ int main(int argc, char** argv) {
         // packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
         fs::directory_entry dir_ent{src_path};
         if(!fs::is_directory(dir_ent)) {
-            std::println("Target is NOT a directory!");
+            std::println(stderr, "Target is NOT a directory!");
             return 1;
         }
 
         packr::pack_header dir_data{dir_ent, DEFAULT_ROOT_DIR};
         if(!dir_data.success) {
-            std::println("pack_header constructor: {}", std::strerror(errno));
+            std::println(stderr, "pack_header constructor: {}", std::strerror(errno));
             return 1;
         }
         if(!named_as.empty()) {
@@ -104,7 +108,7 @@ int main(int argc, char** argv) {
         packr::File_W pack_file_stream{fs::directory_entry(pack_filename)};
 
         if(!pack_file_stream.setup_stream(packr::open_type::fresh)) {
-            std::println("FAILED TO SETUP STREAM");
+            std::println(stderr, "FAILED TO SETUP STREAM");
             return 1;
         }
 

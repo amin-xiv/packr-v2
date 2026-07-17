@@ -10,12 +10,15 @@ target_include_directories(packr PUBLIC ./include)
 target_link_libraries(packr PRIVATE -fsanitize=undefined)
 add_compile_options(-Wall 
 					-Wextra
-					-fhardened
 					$<$<CONFIG:Release>:-O2>
 					$<$<CONFIG:Debug>:-Og>
 					$<$<CONFIG:Debug>:-g>
 					$<$<CONFIG:DEBUG>:-fsanitize=undefined>
 				)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	add_compile_options(-fhardened)
+endif()
 
 include(FetchContent)
 FetchContent_Declare(

@@ -263,7 +263,7 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
     }
 
     special_marker pacK_end_marker{.type = PACK_END};
-    return !(!pack_file.write(reinterpret_cast<char*>(&pacK_end_marker), sizeof(special_marker)));
+    return (pack_file.write(reinterpret_cast<char*>(&pacK_end_marker), sizeof(special_marker)));
 }
 
 bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {

@@ -5,10 +5,15 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BINARY_DIR "${CMAKE_SOURCE_DIR}/build")
 
-add_executable(packr ./src/entry.cpp ./src/main.cpp ./src/utils.cpp ./src/fs_node.cpp)
+add_executable(packr
+	./src/entry.cpp
+	./src/main.cpp
+	./src/utils.cpp
+	./src/fs_node.cpp
+)
 target_include_directories(packr PUBLIC ./include)
 target_link_libraries(packr PRIVATE -fsanitize=undefined)
-add_compile_options(-Wall 
+add_compile_options(-Wall
 					-Wextra
 					$<$<CONFIG:Release>:-O2>
 					$<$<CONFIG:Debug>:-Og>
@@ -23,13 +28,18 @@ endif()
 include(FetchContent)
 FetchContent_Declare(
 	googletest
-	  GIT_REPOSITORY https://github.com/google/googletest.git
-	  GIT_TAG v1.15.2
+			GIT_REPOSITORY https://github.com/google/googletest.git
+			GIT_TAG v1.15.2
 )
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
-add_executable(main_tests ./tests/main.cpp ./src/utils.cpp ./src/entry.cpp ./src/fs_node.cpp)
+add_executable(main_tests
+	./tests/main.cpp
+	./src/utils.cpp
+	./src/entry.cpp
+	./src/fs_node.cpp
+)
 add_executable(side_tests ./tests/side_tests.cpp ./src/utils.cpp)
 include(GoogleTest)
 target_link_libraries(main_tests PRIVATE GTest::gtest_main -fsanitize=undefined)

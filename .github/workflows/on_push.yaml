@@ -23,8 +23,8 @@ jobs:
             -DCMAKE_CXX_COMPILER=g++-14
         working-directory: build
 
-      - run: cp -r ../tests/test-data/dummy_dir1 .
-        working-directory: build
+      - run: bash ./tests-setup.sh
+        working-directory: scripts
 
       - run: cmake --build . --parallel 8
         working-directory: build

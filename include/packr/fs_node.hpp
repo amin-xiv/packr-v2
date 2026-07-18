@@ -16,12 +16,12 @@ class Directory {
     operator bool() const noexcept;
 
   private:
-    const std::filesystem::path dir_path;
-    const std::filesystem::directory_entry directory;
-    dir_type type;
-    std::string secondary_path; // Points to target directory if it's a symlink
-    bool is_valid{};
-    std::string error_message;
+    const std::filesystem::path m_dir_path;
+    const std::filesystem::directory_entry m_directory;
+    dir_type m_type;
+    std::string m_secondary_path; // Points to target directory if it's a symlink
+    bool m_is_valid{};
+    std::string m_error_message;
 };
 
 // Represents files, acts kinda like a FILE*
@@ -35,12 +35,12 @@ class File {
     void refresh() noexcept;
 
   protected:
-    const std::filesystem::path file_path;
-    std::filesystem::directory_entry file;
-    file_type type;
-    std::string secondary_path; // points to block device path, target path(if symlink)..etc
-    bool is_valid{};
-    std::string error_message;
+    const std::filesystem::path m_file_path;
+    std::filesystem::directory_entry m_file;
+    file_type m_type;
+    std::string m_secondary_path; // points to block device path, target path(if symlink)..etc
+    bool m_is_valid{};
+    std::string m_error_message;
 };
 
 // Derrived from 'File' to allow strictly reading from the file
@@ -52,7 +52,7 @@ class File_R : public File {
     [[nodiscard]] bool read(char* buffer, std::streamsize count);
 
   private:
-    std::ifstream stream;
+    std::ifstream m_stream;
 };
 
 // Derrived from 'File' to allow strictly writing to the file
@@ -64,7 +64,7 @@ class File_W : public File {
     [[nodiscard]] bool write(char* buffer, std::streamsize count);
 
   private:
-    std::ofstream stream;
+    std::ofstream m_stream;
 };
 
 } // namespace packr

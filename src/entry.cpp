@@ -21,16 +21,16 @@ namespace packr {
 
 dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count) {
     if(!fs::exists(dir.symlink_status())) {
-        this->success = false;
+        m_success = false;
         return;
     }
     // TODO: Add support for a symbolic dir_entry
 
     // Other members are default intialized during construction
 
-    this->entry_class = (nest_count - 1) == 0 ? entry_class_t::CHILD_ENT : entry_class_t::NESTED_ENT;
+    m_entry_class = (nest_count - 1) == 0 ? entry_class_t::CHILD_ENT : entry_class_t::NESTED_ENT;
     add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
-    this->mode = std::to_underlying(dir.symlink_status().permissions());
+    m_mode = std::to_underlying(dir.symlink_status().permissions());
 
     struct stat ent_stat;
 
@@ -40,46 +40,46 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         std::println("current entry: {}", full_path);
 
         if(lstat(full_path.data(), &ent_stat) == -1) {
-            this->success = false;
+            m_success = false;
             return;
         }
 
         if(fs::is_directory(entry.symlink_status())) {
             dir_entry data_inner{entry, nest_count + 2};
 
-            if(!data_inner.success) {
-                this->success = false;
+            if(!data_inner.m_success) {
+                m_success = false;
                 return;
             }
 
-            this->size += data_inner.size;
-            this->total_entry_count++;
-            this->total_dir_count++;
+            m_size += data_inner.m_size;
+            m_total_entry_count++;
+            m_total_dir_count++;
 
             // Add data_inner's total counts just in case there was nested directories
-            this->total_dir_count += data_inner.total_dir_count;
-            this->total_entry_count += data_inner.total_entry_count;
-            this->total_file_count += data_inner.total_file_count;
+            m_total_dir_count += data_inner.m_total_dir_count;
+            m_total_entry_count += data_inner.m_total_entry_count;
+            m_total_file_count += data_inner.m_total_file_count;
 
             // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
             // we can increment child counts
             if(nest_count == 0) {
-                this->child_entry_count++;
-                this->child_dir_count++;
+                m_child_entry_count++;
+                m_child_dir_count++;
             }
 
-            std::println("added_dirname: {}", this->dirname);
+            std::println("added_dirname: {}", m_dirname);
         } else {
             if(fs::is_regular_file(entry.symlink_status())) {
-                this->size += entry.file_size();
-                this->total_entry_count++;
-                this->total_file_count++;
+                m_size += entry.file_size();
+                m_total_entry_count++;
+                m_total_file_count++;
 
                 // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
                 // we can increment child counts
                 if(nest_count == 0) {
-                    this->child_entry_count++;
-                    this->child_file_count++;
+                    m_child_entry_count++;
+                    m_child_file_count++;
                 }
 
                 //  TODO: Add support for symlinks also here
@@ -95,12 +95,12 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             return;
         }
 
-        this->acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
-        this->mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
-        this->sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
+        m_acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
+        m_mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
+        m_sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
     }
 
-    this->success = true;
+    m_success = true;
 }
 
 file_entry::file_entry(const std::filesystem::path& file_path) {
@@ -109,44 +109,44 @@ file_entry::file_entry(const std::filesystem::path& file_path) {
 
     struct stat file_stat;
     if(lstat(file_path.c_str(), &file_stat) == -1) {
-        this->success = false;
+        m_success = false;
         return;
     }
 
     File file{file_path};
     if(!file) {
-        this->success = false;
+        m_success = false;
         return;
     }
 
     if(!fs::exists(file.entry_obj().symlink_status())) {
-        this->success = false;
+        m_success = false;
         return;
     }
 
     const std::string& actual_filename{file_path.filename().string()};
-    std::strcpy(this->filename, actual_filename.data());
+    std::strcpy(m_filename, actual_filename.data());
 
     // TODO: SYMLINKSS!!
-    this->size = fs::file_size(file_path, err);
+    m_size = fs::file_size(file_path, err);
     if(err) { // i.e. if err.value() > 0
-        this->success = false;
+        m_success = false;
         return;
     }
 
-    this->filename_length = actual_filename.length(); // +1 to count the \0
+    m_filename_length = actual_filename.length(); // +1 to count the \0
 
     // TODO: DOUBLES??
-    this->acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
-    this->mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
-    this->sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);
+    m_acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
+    m_mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
+    m_sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);
 
     if(fs::is_regular_file(file.entry_obj().symlink_status())) {
-        this->type = file_type::regular;
+        m_type = file_type::regular;
     }
 
-    this->mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
-    this->success = true;
+    m_mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
+    m_success = true;
 }
 bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
     //(for future use) bool no_metadata{(opts & P_NOMETADATA) != 0};
@@ -179,7 +179,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         if(fs::is_directory(curr_ent.symlink_status())) {
             dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
-            if(!dir_data_inner.success) {
+            if(!dir_data_inner.m_success) {
                 return false;
             }
 
@@ -187,12 +187,12 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
                 return false;
             }
 
-            dir_header_copy.total_dir_count--;
-            dir_header_copy.total_entry_count--;
+            dir_header_copy.m_total_dir_count--;
+            dir_header_copy.m_total_entry_count--;
 
             if(nest_count == 0) {
-                dir_header_copy.child_entry_count--;
-                dir_header_copy.child_dir_count--;
+                dir_header_copy.m_child_entry_count--;
+                dir_header_copy.m_child_dir_count--;
             }
 
             // TODO: fix this
@@ -203,7 +203,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }*/
         else {
             file_entry file_data{full_path};
-            if(!file_data.success) {
+            if(!file_data.m_success) {
                 return false;
             }
 
@@ -218,7 +218,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
             // check if file has actually some data and size != 0 before writing file
             // contents
-            if(file_data.size > 0) {
+            if(file_data.m_size > 0) {
                 File_R file_stream{full_path};
                 if(!file_stream.setup_stream(open_type::exists)) {
                     return false;
@@ -226,23 +226,23 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
                 // if the file has actual contents and not empty
                 std::string read_buff{};
-                read_buff.reserve(file_data.size);
-                memset(read_buff.data(), '\0', file_data.size);
-                if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.size))) {
+                read_buff.reserve(file_data.m_size);
+                memset(read_buff.data(), '\0', file_data.m_size);
+                if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
                     return false;
                 }
 
                 // TODO: file_data.size() must not be greater than std::streamsize
-                if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.size))) {
+                if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
                     return false;
                 }
 
-                dir_header_copy.total_file_count--;
-                dir_header_copy.total_entry_count--;
+                dir_header_copy.m_total_file_count--;
+                dir_header_copy.m_total_entry_count--;
 
                 if(nest_count == 0) {
-                    dir_header_copy.child_entry_count--;
-                    dir_header_copy.child_file_count--;
+                    dir_header_copy.m_child_entry_count--;
+                    dir_header_copy.m_child_file_count--;
                 }
             }
         }
@@ -296,25 +296,25 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 const char* unnamed_filename = "unamed-file"; // Just in case the file had no name for some reason
-                if(curr_file_data.filename_length < 1) {
+                if(curr_file_data.m_filename_length < 1) {
                     // Copying it into curr_file_data.filename so a flag isn't needed
-                    memcpy(curr_file_data.filename, unnamed_filename, strlen(unnamed_filename));
+                    memcpy(curr_file_data.m_filename, unnamed_filename, strlen(unnamed_filename));
                 }
 
-                File_W target_file{curr_file_data.filename};
+                File_W target_file{curr_file_data.m_filename};
                 if(!target_file.setup_stream(open_type::fresh)) {
                     return false;
                 }
 
-                if(curr_file_data.size > 0) {
+                if(curr_file_data.m_size > 0) {
                     std::string file_data_buff{};
-                    file_data_buff.reserve(curr_file_data.size);
+                    file_data_buff.reserve(curr_file_data.m_size);
 
-                    if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.size))) {
+                    if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
                         return false;
                     }
 
-                    if(!target_file.write(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.size))) {
+                    if(!target_file.write(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
                         return false;
                     }
                 }
@@ -330,12 +330,12 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
-                if(curr_dir_data.dirname_length < 1) {
+                if(curr_dir_data.m_dirname_length < 1) {
                     // Copying it into curr_dir_data.dirname so a flag isn't needed
-                    memcpy(curr_dir_data.dirname, unnamed_dirname, strlen(unnamed_dirname));
+                    memcpy(curr_dir_data.m_dirname, unnamed_dirname, strlen(unnamed_dirname));
                 }
 
-                if(mkdir(curr_dir_data.dirname, curr_dir_data.mode) == -1) {
+                if(mkdir(curr_dir_data.m_dirname, curr_dir_data.m_mode) == -1) {
                     return false;
                 }
                 char* cwd{getcwd(nullptr, 0)};
@@ -343,7 +343,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     return false;
                 }
                 // The path of the newely created directory
-                std::optional<std::string> target_dir_path{join_to_path(curr_dir_data.dirname, cwd)};
+                std::optional<std::string> target_dir_path{join_to_path(curr_dir_data.m_dirname, cwd)};
                 if(!target_dir_path) {
                     free(cwd);
                     return false;
@@ -409,7 +409,7 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     }
 
     // Making the root directory and changing into it
-    if(mkdir(pack_header.dirname, pack_header.mode) == -1) {
+    if(mkdir(pack_header.m_dirname, pack_header.m_mode) == -1) {
         if(errno != EEXIST) {
             return false;
         }
@@ -418,7 +418,7 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     if(cwd == nullptr) {
         return false;
     }
-    std::optional<std::string> root_dir_path{join_to_path(pack_header.dirname, cwd)};
+    std::optional<std::string> root_dir_path{join_to_path(pack_header.m_dirname, cwd)};
     if(!root_dir_path) {
         return false;
     }

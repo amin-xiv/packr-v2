@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
         }
 
         packr::pack_header dir_data{dir_ent, DEFAULT_ROOT_DIR};
-        if(!dir_data.success) {
+        if(!dir_data.m_success) {
             std::println(stderr, "pack_header constructor: {}", std::strerror(errno));
             return 1;
         }

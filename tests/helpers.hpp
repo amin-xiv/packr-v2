@@ -6,24 +6,24 @@
 #include <gtest/gtest.h>
 
 void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rhs) {
-    ASSERT_TRUE(lhs.success);
-    ASSERT_TRUE(rhs.success);
+    ASSERT_TRUE(lhs.m_success);
+    ASSERT_TRUE(rhs.m_success);
 
-    if(std::string{lhs.dirname} == std::string{rhs.dirname}) {
-        EXPECT_STREQ(lhs.dirname, rhs.dirname);
-        EXPECT_EQ(lhs.dirname_length, rhs.dirname_length);
+    if(std::string{lhs.m_dirname} == std::string{rhs.m_dirname}) {
+        EXPECT_STREQ(lhs.m_dirname, rhs.m_dirname);
+        EXPECT_EQ(lhs.m_dirname_length, rhs.m_dirname_length);
     }
 
-    EXPECT_EQ(lhs.size, rhs.size);
-    EXPECT_EQ(lhs.child_dir_count, rhs.child_dir_count);
-    EXPECT_EQ(lhs.child_file_count, rhs.child_file_count);
-    EXPECT_EQ(lhs.total_file_count, rhs.total_file_count);
-    EXPECT_EQ(lhs.total_dir_count, rhs.total_dir_count);
-    EXPECT_EQ(lhs.acc_time, rhs.acc_time);
-    EXPECT_EQ(lhs.mod_time, rhs.mod_time);
-    EXPECT_EQ(lhs.sc_time, rhs.sc_time);
-    EXPECT_EQ(lhs.mode, rhs.mode);
-    EXPECT_EQ(lhs.type, rhs.type);
+    EXPECT_EQ(lhs.m_size, rhs.m_size);
+    EXPECT_EQ(lhs.m_child_dir_count, rhs.m_child_dir_count);
+    EXPECT_EQ(lhs.m_child_file_count, rhs.m_child_file_count);
+    EXPECT_EQ(lhs.m_total_file_count, rhs.m_total_file_count);
+    EXPECT_EQ(lhs.m_total_dir_count, rhs.m_total_dir_count);
+    EXPECT_EQ(lhs.m_acc_time, rhs.m_acc_time);
+    EXPECT_EQ(lhs.m_mod_time, rhs.m_mod_time);
+    EXPECT_EQ(lhs.m_sc_time, rhs.m_sc_time);
+    EXPECT_EQ(lhs.m_mode, rhs.m_mode);
+    EXPECT_EQ(lhs.m_type, rhs.m_type);
 }
 
 void compare_dir_trees(const std::filesystem::directory_entry& base, const std::filesystem::directory_entry& sample) {

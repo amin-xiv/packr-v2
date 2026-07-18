@@ -30,21 +30,21 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     // getting the dir's timestamps and such
     ASSERT_FALSE(lstat(full_path.value().data(), &ent_stat) == -1);
 
-    ASSERT_TRUE(dirEntry.success);
-    EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.dirname);
-    EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.dirname_length);
-    EXPECT_EQ(get_dir_size(dir_fs), dirEntry.size);
-    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), dirEntry.mod_time);
-    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), dirEntry.acc_time);
-    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), dirEntry.sc_time);
-    EXPECT_EQ(dirEntry.child_entry_count, 2);
-    EXPECT_EQ(dirEntry.child_file_count, 1);
-    EXPECT_EQ(dirEntry.child_dir_count, 1);
-    EXPECT_EQ(dirEntry.total_entry_count, 7);
-    EXPECT_EQ(dirEntry.total_file_count, 4);
-    EXPECT_EQ(dirEntry.total_dir_count, 3);
-    EXPECT_EQ((fs::perms(dirEntry.mode)), dir_fs.status().permissions());
-    EXPECT_EQ(dirEntry.type, dir_type::regular);
+    ASSERT_TRUE(dirEntry.m_success);
+    EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);
+    EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.m_dirname_length);
+    EXPECT_EQ(get_dir_size(dir_fs), dirEntry.m_size);
+    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), dirEntry.m_mod_time);
+    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), dirEntry.m_acc_time);
+    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), dirEntry.m_sc_time);
+    EXPECT_EQ(dirEntry.m_child_entry_count, 2);
+    EXPECT_EQ(dirEntry.m_child_file_count, 1);
+    EXPECT_EQ(dirEntry.m_child_dir_count, 1);
+    EXPECT_EQ(dirEntry.m_total_entry_count, 7);
+    EXPECT_EQ(dirEntry.m_total_file_count, 4);
+    EXPECT_EQ(dirEntry.m_total_dir_count, 3);
+    EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.status().permissions());
+    EXPECT_EQ(dirEntry.m_type, dir_type::regular);
 }
 
 TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
@@ -62,15 +62,15 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     // getting the dir's timestamps and such
     ASSERT_FALSE(lstat(file_fs.path().c_str(), &ent_stat) == -1);
 
-    ASSERT_TRUE(fileEntry.success);
-    EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.filename);
-    EXPECT_EQ(file_fs.path().filename().string().size(), fileEntry.filename_length);
-    EXPECT_EQ(file_fs.file_size(), fileEntry.size);
-    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), fileEntry.mod_time);
-    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), fileEntry.acc_time);
-    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), fileEntry.sc_time);
-    EXPECT_EQ(fs::perms(fileEntry.mode), file_fs.status().permissions());
-    EXPECT_EQ(fileEntry.type, file_type::regular);
+    ASSERT_TRUE(fileEntry.m_success);
+    EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.m_filename);
+    EXPECT_EQ(file_fs.path().filename().string().size(), fileEntry.m_filename_length);
+    EXPECT_EQ(file_fs.file_size(), fileEntry.m_size);
+    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), fileEntry.m_mod_time);
+    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), fileEntry.m_acc_time);
+    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), fileEntry.m_sc_time);
+    EXPECT_EQ(fs::perms(fileEntry.m_mode), file_fs.status().permissions());
+    EXPECT_EQ(fileEntry.m_type, file_type::regular);
 }
 
 TEST_F(packingAndUnpackingTestdata, packFilename) {
@@ -122,8 +122,8 @@ TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
     compare_dir_entries(dummy_dir1_data, dum_data);
 
     // As these won't be compared
-    EXPECT_STREQ(dum_data.dirname, "dum");
-    EXPECT_EQ(dum_data.dirname_length, 3);
+    EXPECT_STREQ(dum_data.m_dirname, "dum");
+    EXPECT_EQ(dum_data.m_dirname_length, 3);
 }
 
 // Tests that the dir structure is the same

@@ -21,18 +21,18 @@ struct file_entry {
     file_entry() = default;
     file_entry(const std::filesystem::path& file_path);
 
-    char filename[NAME_MAX]{};
-    char secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
-    u64 size{};                      // file size
-    u64 acc_time{};                  // last access time
-    u64 mod_time{};                  // last modification time
-    u64 sc_time{};                   // last status change time
-    u16 filename_length{};
-    u16 secondary_path_length{};
-    u16 mode{};                  // permissions
-    entry_class_t entry_class{}; // u8
-    file_type type{};            // u8
-    bool success{false};
+    char m_filename[NAME_MAX]{};
+    char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
+    u64 m_size{};                      // file size
+    u64 m_acc_time{};                  // last access time
+    u64 m_mod_time{};                  // last modification time
+    u64 m_sc_time{};                   // last status change time
+    u16 m_filename_length{};
+    u16 m_secondary_path_length{};
+    u16 m_mode{};                  // permissions
+    entry_class_t m_entry_class{}; // u8
+    file_type m_type{};            // u8
+    bool m_success{false};
 
 } __attribute__((packed));
 
@@ -42,24 +42,24 @@ struct dir_entry {
     dir_entry() = default;
     dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count);
 
-    char dirname[NAME_MAX]{};
-    char secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink
-    u64 child_entry_count{};
-    u64 child_file_count{};
-    u64 child_dir_count{};
-    u64 total_entry_count{};
-    u64 total_dir_count{};
-    u64 total_file_count{};
-    u64 size{};     // directory size(obviously)
-    u64 acc_time{}; // last access time
-    u64 mod_time{}; // last modification time
-    u64 sc_time{};  // last status change time
-    u16 dirname_length{};
-    u16 secondary_path_length{};
-    u16 mode{};                  // permissions
-    entry_class_t entry_class{}; // u8
-    dir_type type{};             // u8
-    bool success{false};
+    char m_dirname[NAME_MAX]{};
+    char m_secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink
+    u64 m_child_entry_count{};
+    u64 m_child_file_count{};
+    u64 m_child_dir_count{};
+    u64 m_total_entry_count{};
+    u64 m_total_dir_count{};
+    u64 m_total_file_count{};
+    u64 m_size{};     // directory size(obviously)
+    u64 m_acc_time{}; // last access time
+    u64 m_mod_time{}; // last modification time
+    u64 m_sc_time{};  // last status change time
+    u16 m_dirname_length{};
+    u16 m_secondary_path_length{};
+    u16 m_mode{};                  // permissions
+    entry_class_t m_entry_class{}; // u8
+    dir_type m_type{};             // u8
+    bool m_success{false};
 
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack
     // file)

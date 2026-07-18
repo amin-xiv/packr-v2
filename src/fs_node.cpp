@@ -7,94 +7,93 @@ namespace fs = std::filesystem;
 namespace packr {
 
 Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m_dir_path) {
-    fs::file_status sym_status{this->m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
-    std::error_code err{};                                          // Just to avoid exceptions throw by fs::is_directory
+    fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
+    std::error_code err{};                                    // Just to avoid exceptions throw by fs::is_directory
 
     if(!fs::exists(sym_status)) {
-        this->m_is_valid = false;
-        this->m_error_message =
-            std::string{"The path "} + m_dir_path.string() + std::string{" doesn't point to a valid directory!"};
+        m_is_valid = false;
+        m_error_message = std::string{"The path "} + m_dir_path.string() + std::string{" doesn't point to a valid directory!"};
 
-    } else if(fs::is_directory(this->m_directory, err) && fs::is_symlink(sym_status)) {
+    } else if(fs::is_directory(m_directory, err) && fs::is_symlink(sym_status)) {
         // First condition to check if the entry is a symlink, and the second to check if it was an actual directory
-        this->m_is_valid = true;
-        this->m_type = dir_type::symlink;
+        m_is_valid = true;
+        m_type = dir_type::symlink;
 
         // REVISE
-        this->m_secondary_path = fs::read_symlink(this->m_dir_path).string();
+        m_secondary_path = fs::read_symlink(this->m_dir_path).string();
 
     } else if(fs::is_directory(sym_status)) {
-        this->m_is_valid = true;
-        this->m_type = dir_type::regular;
+        m_is_valid = true;
+        m_type = dir_type::regular;
     } else {
-        this->m_is_valid = false;
-        this->m_error_message = "Unknown directory type!";
+        m_is_valid = false;
+        m_error_message = "Unknown directory type!";
     }
 }
 
 const fs::directory_entry& Directory::entry_obj() const noexcept {
-    return this->m_directory;
+    return m_directory;
 }
 
 const fs::path& Directory::path_obj() const noexcept {
-    return this->m_dir_path;
+    return m_dir_path;
 }
 
 Directory::operator bool() const noexcept {
-    return this->m_is_valid;
+    return m_is_valid;
 }
 
-File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_file(this->m_file_path) {
-    fs::file_status sym_status{this->m_file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
-    std::error_code err{};                                     // Just to avoid exceptions throw by fs::is_directory
+File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_file(m_file_path) {
+    fs::file_status sym_status{m_file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
+    std::error_code err{};                               // Just to avoid exceptions throw by fs::is_directory
 
-    if(!fs::exists(sym_status) || this->m_file.is_directory(err) || fs::is_directory(sym_status)) {
-        this->m_is_valid = false;
-        this->m_error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
+    if(!fs::exists(sym_status) || m_file.is_directory(err) || fs::is_directory(sym_status)) {
+        m_is_valid = false;
+        m_error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
 
     } else if(fs::is_symlink(sym_status)) {
-        this->m_is_valid = true;
-        this->m_type = file_type::symlink;
+        m_is_valid = true;
+        m_type = file_type::symlink;
 
         // REVISE, both the functionality and exception safety
-        this->m_secondary_path = fs::read_symlink(this->m_file_path).string();
+        m_secondary_path = fs::read_symlink(this->m_file_path).string();
 
     } else if(fs::is_regular_file(sym_status)) {
-        this->m_is_valid = true;
-        this->m_type = file_type::regular;
+        m_is_valid = true;
+        m_type = file_type::regular;
 
     } else {
-        this->m_is_valid = false;
-        this->m_type = file_type::special;
-        this->m_error_message = std::string{"Skipping special file: "} + this->m_file_path.string();
+        m_is_valid = false;
+        m_type = file_type::special;
+        m_error_message = std::string{"Skipping special file: "} + this->m_file_path.string();
     }
 }
 
 const fs::directory_entry& File::entry_obj() const noexcept {
-    return this->m_file;
+    return m_file;
 }
 
 const fs::path& File::path_obj() const noexcept {
-    return this->m_file_path;
+    return m_file_path;
 }
 
 File::operator bool() const noexcept {
-    return this->m_is_valid;
+    return m_is_valid;
 }
 
 void File::refresh() noexcept {
     // dummy error code
     std::error_code err;
-    this->m_file.refresh(err);
+    m_file.refresh(err);
 }
 
 bool File_R::setup_stream(const open_type type) {
     // dummy error_code
 
     if(type == open_type::fresh) {
-        this->m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
+        m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
         this->refresh();
-        return this->m_stream.is_open();
+        return m_stream.is_open();
     }
 
     // Check if the file exists
@@ -102,24 +101,24 @@ bool File_R::setup_stream(const open_type type) {
         return false;
     }
 
-    this->m_stream.open(this->path_obj().string(), std::ios::binary);
-    return this->m_stream.is_open();
+    m_stream.open(this->path_obj().string(), std::ios::binary);
+    return m_stream.is_open();
 }
 
 bool File_R::read(char* buffer, std::streamsize count) {
-    if(!this->m_stream.is_open() || buffer == nullptr) {
+    if(!m_stream.is_open() || buffer == nullptr) {
         return false;
     }
 
-    this->m_stream.read(buffer, count);
+    m_stream.read(buffer, count);
     return true;
 }
 
 bool File_W::setup_stream(const open_type type) {
     if(type == open_type::fresh) {
-        this->m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
+        m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
         this->refresh();
-        return this->m_stream.is_open();
+        return m_stream.is_open();
     }
 
     // Check if the file exists
@@ -127,16 +126,16 @@ bool File_W::setup_stream(const open_type type) {
         return false;
     }
 
-    this->m_stream.open(this->path_obj().string(), std::ios::binary);
-    return this->m_stream.is_open();
+    m_stream.open(this->path_obj().string(), std::ios::binary);
+    return m_stream.is_open();
 }
 
 bool File_W::write(char* buffer, std::streamsize count) {
-    if(!this->m_stream.is_open() || buffer == nullptr) {
+    if(!m_stream.is_open() || buffer == nullptr) {
         return false;
     }
 
-    this->m_stream.write(buffer, count);
+    m_stream.write(buffer, count);
     return true;
 }
 

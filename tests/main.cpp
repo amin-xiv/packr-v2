@@ -21,7 +21,7 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
 
     // fs directory intialization
     fs::directory_entry dir_fs{full_path.value()};
-    ASSERT_TRUE(dir_fs.exists());
+    ASSERT_TRUE(fs::is_directory(dir_fs));
 
     // dir_entry initialization
     dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR};
@@ -43,7 +43,7 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     EXPECT_EQ(dirEntry.m_total_entry_count, 7);
     EXPECT_EQ(dirEntry.m_total_file_count, 4);
     EXPECT_EQ(dirEntry.m_total_dir_count, 3);
-    EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.status().permissions());
+    EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.symlink_status().permissions());
     EXPECT_EQ(dirEntry.m_type, dir_type::regular);
 }
 

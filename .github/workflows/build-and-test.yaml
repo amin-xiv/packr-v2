@@ -1,0 +1,125 @@
+name: on-push-actions
+run-name: Build and test
+
+on: [push]
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: mkdir build
+
+      - run: |
+          sudo apt update
+          sudo apt install -y g++-14
+
+      - name: Configure CMake
+        run: |
+            cmake -S .. -B . \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_C_COMPILER=gcc-14 \
+              -DCMAKE_CXX_COMPILER=g++-14
+        working-directory: build
+
+      - name: Build executables
+        run: cmake --build . --parallel 8
+        working-directory: build
+
+      - name: Setup tests - debug
+        run: bash ./tests-setup.sh
+        working-directory: scripts
+
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-directory-debug
+          path: ./build
+
+
+  test-debug:
+      needs: build-debug
+
+      runs-on: ubuntu-latest
+
+      steps:
+      - uses: actions/checkout@v6
+
+      - run: mkdir build
+
+      - name: Download build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-directory-debug
+          path: build
+
+      - name: set execution permissions
+        run: chmod +x main_tests && chmod +x side_tests && chmod +x packr
+        working-directory: build
+
+
+      - name: run tests
+        run: ctest  --output-on-failure
+        working-directory: build
+
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: mkdir build
+
+      - run: |
+          sudo apt update
+          sudo apt install -y g++-14
+
+      - name: Configure CMake
+        run: |
+            cmake -S .. -B . \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER=gcc-14 \
+              -DCMAKE_CXX_COMPILER=g++-14
+        working-directory: build
+
+      - name: Build executables
+        run: cmake --build . --parallel 8
+        working-directory: build
+
+      - name: Setup tests - debug
+        run: bash ./tests-setup.sh
+        working-directory: scripts
+
+      - name: Upload build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-directory-release
+          path: ./build
+
+
+  test-release:
+      needs: build-release
+
+      runs-on: ubuntu-latest
+
+      steps:
+      - uses: actions/checkout@v6
+
+      - run: mkdir build
+
+      - name: Download build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-directory-release
+          path: build
+
+      - name: set execution permissions
+        run: chmod +x main_tests && chmod +x side_tests && chmod +x packr
+        working-directory: build
+
+
+      - name: run tests
+        run: ctest  --output-on-failure
+        working-directory: build

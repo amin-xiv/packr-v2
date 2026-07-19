@@ -34,9 +34,9 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);
     EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.m_dirname_length);
     EXPECT_EQ(get_dir_size(dir_fs), dirEntry.m_size);
-    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), dirEntry.m_mod_time);
-    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), dirEntry.m_acc_time);
-    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), dirEntry.m_sc_time);
+    compare_time_specs(ent_stat.st_atim, dirEntry.m_acc_time);
+    compare_time_specs(ent_stat.st_mtim, dirEntry.m_mod_time);
+    compare_time_specs(ent_stat.st_ctim, dirEntry.m_sc_time);
     EXPECT_EQ(dirEntry.m_child_entry_count, 2);
     EXPECT_EQ(dirEntry.m_child_file_count, 1);
     EXPECT_EQ(dirEntry.m_child_dir_count, 1);
@@ -66,9 +66,10 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.m_filename);
     EXPECT_EQ(file_fs.path().filename().string().size(), fileEntry.m_filename_length);
     EXPECT_EQ(file_fs.file_size(), fileEntry.m_size);
-    EXPECT_EQ(ent_stat.st_mtim.tv_sec + NSEC_TO_SEC(ent_stat.st_mtim.tv_nsec), fileEntry.m_mod_time);
-    EXPECT_EQ(ent_stat.st_atim.tv_sec + NSEC_TO_SEC(ent_stat.st_atim.tv_nsec), fileEntry.m_acc_time);
-    EXPECT_EQ(ent_stat.st_ctim.tv_sec + NSEC_TO_SEC(ent_stat.st_ctim.tv_nsec), fileEntry.m_sc_time);
+    compare_time_specs(ent_stat.st_atim, fileEntry.m_acc_time);
+    compare_time_specs(ent_stat.st_mtim, fileEntry.m_mod_time);
+    compare_time_specs(ent_stat.st_ctim, fileEntry.m_sc_time);
+
     EXPECT_EQ(fs::perms(fileEntry.m_mode), file_fs.status().permissions());
     EXPECT_EQ(fileEntry.m_type, file_type::regular);
 }

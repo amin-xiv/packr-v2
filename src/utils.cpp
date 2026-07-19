@@ -85,9 +85,9 @@ void print_dir_data(const dir_entry& dir_data) noexcept {
     std::println("child_file_count: {}", static_cast<packr::u64>(dir_data.m_child_file_count));
     std::println("child_entry_count: {}", static_cast<packr::u64>(dir_data.m_child_entry_count));
 
-    std::println("last access time: {}", static_cast<packr::u64>(dir_data.m_acc_time));
-    std::println("last modification time: {}", static_cast<packr::u64>(dir_data.m_mod_time));
-    std::println("last status change time: {}", static_cast<packr::u64>(dir_data.m_sc_time));
+    std::println("last access time: sec: {}, nsec: {}", dir_data.m_acc_time.sec, dir_data.m_acc_time.nsec);
+    std::println("last modification time: sec: {}, nsec: {}", dir_data.m_mod_time.sec, dir_data.m_mod_time.nsec);
+    std::println("last last status change time: sec: {}, nsec: {}", dir_data.m_sc_time.sec, dir_data.m_sc_time.nsec);
     std::println("mode: {}", static_cast<packr::u64>(dir_data.m_mode));
 }
 

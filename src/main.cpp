@@ -13,13 +13,12 @@ namespace fs = std::filesystem;
 static void print_help();
 
 int main(int argc, char** argv) {
-    int cur_opt;
+    int cur_opt{};
+    packr::u8 opts{};
     std::string src_path{};
     std::string named_as{};
     bool op_provided{false}; // Whether a -p or -u option was provided
-    // bool no_metadata{false};
     bool path_provided{false};
-    // bool path_absolute{false};
     packr::OP_TYPE operation;
 
     while((cur_opt = getopt(argc, argv, "pushl:a:")) != -1) {
@@ -43,7 +42,7 @@ int main(int argc, char** argv) {
             break;
 
         case 's':
-            // no_metadata = true;
+
             break;
 
         case 'l':
@@ -91,7 +90,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        packr::pack_header dir_data{dir_ent, DEFAULT_ROOT_DIR};
+        packr::pack_header dir_data{dir_ent, packr::DEFAULT_ROOT_DIR};
         if(!dir_data.m_success) {
             std::println(stderr, "pack_header constructor: {}", std::strerror(errno));
             return 1;
@@ -112,7 +111,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        if(!dir_data.pack(dir_ent, pack_file_stream, DEFAULT_ROOT_DIR)) {
+        if(!dir_data.pack(dir_ent, pack_file_stream, packr::DEFAULT_ROOT_DIR)) {
             perror("pack()");
             std::println(stderr, "pack(): {}", strerror(errno));
             return 1;
@@ -137,6 +136,6 @@ int main(int argc, char** argv) {
 }
 
 static void print_help() {
-    std::println("Usage:\n -p: pack a directory\n -u: unpack a .packr file\n -s: neglect metadata\n -l: path to directory\n "
+    std::println("Usage:\n -p: pack a directory\n -u: unpack a .packr file\n -s: follow symlinks\n -l: path to directory\n "
                  "-h: help");
 }

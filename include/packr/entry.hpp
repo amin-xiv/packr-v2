@@ -2,21 +2,14 @@
 
 #include <packr/types.hpp>
 #include <packr/fs_node.hpp>
+#include <packr/misc_structs.hpp>
 #include <filesystem>
 #include <climits>
-
-#define ENT_DIR_START ((uint8_t)0x01)
-#define ENT_DIR_END ((uint8_t)0x02)
-#define ENT_FILE ((uint8_t)0x04)
-#define PACK_START ((uint8_t)0x08)
-#define PACK_END ((uint8_t)0x10) // 16
-#define DEFAULT_ROOT_DIR 0
-#define P_NOMETADATA 0B00000001
 
 namespace packr {
 
 // This struct would be written into the pack file
-struct file_entry {
+struct [[gnu::packed]] file_entry {
     // Constructors
     file_entry() = default;
     file_entry(const std::filesystem::path& file_path);
@@ -24,20 +17,19 @@ struct file_entry {
     char m_filename[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
     u64 m_size{};                      // file size
-    u64 m_acc_time{};                  // last access time
-    u64 m_mod_time{};                  // last modification time
-    u64 m_sc_time{};                   // last status change time
+    time_spec m_acc_time{};            // last access time
+    time_spec m_mod_time{};            // last modification time
+    time_spec m_sc_time{};             // last status change time
     u16 m_filename_length{};
     u16 m_secondary_path_length{};
     u16 m_mode{};                  // permissions
     entry_class_t m_entry_class{}; // u8
     file_type m_type{};            // u8
     bool m_success{false};
-
-} __attribute__((packed));
+};
 
 // This struct would be written into the pack file
-struct dir_entry {
+struct [[gnu::packed]] dir_entry {
     // Constructors
     dir_entry() = default;
     dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count);
@@ -50,10 +42,10 @@ struct dir_entry {
     u64 m_total_entry_count{};
     u64 m_total_dir_count{};
     u64 m_total_file_count{};
-    u64 m_size{};     // directory size(obviously)
-    u64 m_acc_time{}; // last access time
-    u64 m_mod_time{}; // last modification time
-    u64 m_sc_time{};  // last status change time
+    u64 m_size{};           // directory size
+    time_spec m_acc_time{}; // last access time
+    time_spec m_mod_time{}; // last modification time
+    time_spec m_sc_time{};  // last status change time
     u16 m_dirname_length{};
     u16 m_secondary_path_length{};
     u16 m_mode{};                  // permissions
@@ -71,8 +63,7 @@ struct dir_entry {
 
     // Unpacks a given pack file(calls unpack_dir)
     [[nodiscard]] static bool unpack(File_R& pack_file, const u8 opts);
-
-} __attribute__((packed));
+};
 
 // Almost the same as dir_entry, just offers the pack() function and just differentiates regular dirs from pack headers
 struct pack_header : public dir_entry {

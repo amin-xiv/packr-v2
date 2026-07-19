@@ -90,5 +90,5 @@ TEST(specialMarkers, mainTest) {
 // Testing other macros and constant values
 TEST(otherMacrosAndConstants, mainTests) {
     EXPECT_EQ(DEFAULT_ROOT_DIR, 0);
-    EXPECT_EQ(P_NOMETADATA, 0B00000001);
+    EXPECT_EQ(O_SYM, 0B00000001);
 }

@@ -1,9 +1,10 @@
-#include <ios>
 #include <packr/entry.hpp>
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
+#include <packr/misc_structs.hpp>
 #include <filesystem>
+#include <ios>
 #include <string>
 #include <sys/stat.h>
 #include <cstring>
@@ -20,14 +21,13 @@ namespace fs = std::filesystem;
 namespace packr {
 
 dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count) {
-    if(!fs::exists(dir.symlink_status())) {
+    if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir.status())) {
         m_success = false;
         return;
     }
     // TODO: Add support for a symbolic dir_entry
 
     // Other members are default intialized during construction
-
     m_entry_class = (nest_count - 1) == 0 ? entry_class_t::CHILD_ENT : entry_class_t::NESTED_ENT;
     add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
     m_mode = std::to_underlying(dir.symlink_status().permissions());
@@ -95,9 +95,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             return;
         }
 
-        m_acc_time = root_stat.st_atim.tv_sec + NSEC_TO_SEC(root_stat.st_atim.tv_nsec);
-        m_mod_time = root_stat.st_mtim.tv_sec + NSEC_TO_SEC(root_stat.st_mtim.tv_nsec);
-        m_sc_time = root_stat.st_ctim.tv_sec + NSEC_TO_SEC(root_stat.st_ctim.tv_nsec);
+        m_acc_time = {.sec = static_cast<u64>(root_stat.st_atim.tv_sec), .nsec = static_cast<u64>(root_stat.st_atim.tv_nsec)};
+        m_mod_time = {.sec = static_cast<u64>(root_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(root_stat.st_mtim.tv_nsec)};
+        m_sc_time = {.sec = static_cast<u64>(root_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(root_stat.st_ctim.tv_nsec)};
     }
 
     m_success = true;
@@ -136,10 +136,9 @@ file_entry::file_entry(const std::filesystem::path& file_path) {
 
     m_filename_length = actual_filename.length(); // +1 to count the \0
 
-    // TODO: DOUBLES??
-    m_acc_time = file_stat.st_atim.tv_sec + NSEC_TO_SEC(file_stat.st_atim.tv_nsec);
-    m_mod_time = file_stat.st_mtim.tv_sec + NSEC_TO_SEC(file_stat.st_mtim.tv_nsec);
-    m_sc_time = file_stat.st_ctim.tv_sec + NSEC_TO_SEC(file_stat.st_ctim.tv_nsec);
+    m_acc_time = {.sec = static_cast<u64>(file_stat.st_atim.tv_sec), .nsec = static_cast<u64>(file_stat.st_atim.tv_nsec)};
+    m_mod_time = {.sec = static_cast<u64>(file_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(file_stat.st_mtim.tv_nsec)};
+    m_sc_time = {.sec = static_cast<u64>(file_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(file_stat.st_ctim.tv_nsec)};
 
     if(fs::is_regular_file(file.entry_obj().symlink_status())) {
         m_type = file_type::regular;
@@ -149,11 +148,9 @@ file_entry::file_entry(const std::filesystem::path& file_path) {
     m_success = true;
 }
 bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
-    //(for future use) bool no_metadata{(opts & P_NOMETADATA) != 0};
     dir_entry dir_header_copy{*this};
 
-    // write the dir header upfront only if it's the intial pack header(nest_count
-    // = 0)
+    // write the dir header upfront only if it's the intial pack header(nest_count = 0)
     if(nest_count == 0) {
         if(!pack_file.write(reinterpret_cast<char*>(this), sizeof(dir_entry))) {
             return false;
@@ -173,11 +170,14 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
+        std::error_code err;
         const std::string full_path{curr_ent.path().string()};
 
         std::println("current entry to pack: {}", full_path);
 
-        if(fs::is_directory(curr_ent.symlink_status())) {
+        const fs::file_status ent_sym_status{curr_ent.symlink_status(err)};
+        // Returns false in case curr_ent is a symlink to a directory
+        if(fs::is_directory(ent_sym_status)) {
             dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
             if(!dir_data_inner.m_success) {
                 return false;
@@ -195,13 +195,8 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
                 dir_header_copy.m_child_dir_count--;
             }
 
-            // TODO: fix this
-
-        } /*else if(S_ISLNK(ent_stat.st_mode)) {
-            // i don't wanna handle any symlinks rn
-            continue;
-        }*/
-        else {
+        } else if(fs::is_symlink(ent_sym_status)) {
+        } else if(fs::is_regular_file(ent_sym_status)) {
             file_entry file_data{full_path};
             if(!file_data.m_success) {
                 return false;
@@ -267,8 +262,6 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
 }
 
 bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {
-    // 'opts' flag is for future use(maybe lol)
-
     // Flag to keep looping
     bool read_pack_file{true};
 

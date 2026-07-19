@@ -4,7 +4,6 @@
 #include <packr/types.hpp>
 #include <filesystem>
 #include <optional>
-#define NSEC_TO_SEC(x) (static_cast<u64>((x) / 1e9))
 
 namespace packr {
 

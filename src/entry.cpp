@@ -20,6 +20,7 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
+//  NOTE: This currently doesn't take opts to know whether to take a symlink or no
 dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count) {
     if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir.status())) {
         m_success = false;
@@ -39,6 +40,10 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
         std::println("current entry: {}", full_path);
 
+        // NOTE: Use stat() when symlinks should be followed
+        // NOTE: I think we should check if !nest_count && sym?? then we should use stat
+        // NOTE: But anyway, if this was the root dir_entry, then it should be stat anyway since since symlinked pack dirs should
+        // be followed
         if(lstat(full_path.data(), &ent_stat) == -1) {
             m_success = false;
             return;
@@ -89,9 +94,10 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
+    // NOTE: Same here
     if(nest_count == 0) {
         struct stat root_stat;
-        if(lstat(dir.path().string().data(), &root_stat) == -1) {
+        if(stat(dir.path().string().data(), &root_stat) == -1) {
             return;
         }
 
@@ -169,6 +175,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }
     }
 
+    // NOTE: Start here
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
         std::error_code err;
         const std::string full_path{curr_ent.path().string()};
@@ -196,6 +203,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             }
 
         } else if(fs::is_symlink(ent_sym_status)) {
+            // NOTE: I guess I have to then pass the linked-to directory to this function again? (recurse 🌚)
         } else if(fs::is_regular_file(ent_sym_status)) {
             file_entry file_data{full_path};
             if(!file_data.m_success) {

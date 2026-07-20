@@ -28,7 +28,7 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(lstat(full_path.value().data(), &ent_stat) == -1);
+    ASSERT_FALSE(stat(full_path.value().data(), &ent_stat) == -1);
 
     ASSERT_TRUE(dirEntry.m_success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);

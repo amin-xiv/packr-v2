@@ -6,9 +6,10 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
+// NOTE: should I read symlinks here??
 Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m_dir_path) {
-    fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
     std::error_code err{};                                    // Just to avoid exceptions throw by fs::is_directory
+    fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
 
     if(!fs::exists(sym_status)) {
         m_is_valid = false;
@@ -47,7 +48,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
     fs::file_status sym_status{m_file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
     std::error_code err{};                               // Just to avoid exceptions throw by fs::is_directory
 
-    if(!fs::exists(sym_status) || m_file.is_directory(err) || fs::is_directory(sym_status)) {
+    if(!fs::exists(sym_status) || m_file.is_directory(err)) {
         m_is_valid = false;
         m_error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
 
@@ -55,8 +56,8 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
         m_is_valid = true;
         m_type = file_type::symlink;
 
-        // REVISE, both the functionality and exception safety
-        m_secondary_path = fs::read_symlink(this->m_file_path).string();
+        // NOTE: REVISE, both the functionality and exception safety
+        m_secondary_path = fs::read_symlink(this->m_file_path, err).string();
 
     } else if(fs::is_regular_file(sym_status)) {
         m_is_valid = true;

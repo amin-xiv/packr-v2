@@ -24,7 +24,7 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     ASSERT_TRUE(fs::is_directory(dir_fs));
 
     // dir_entry initialization
-    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR};
+    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR, 0};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
@@ -115,9 +115,9 @@ TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
     ASSERT_EQ(get_dir_size(dummy_dir1), get_dir_size(new_dummy_dir1));
     ASSERT_EQ(get_dir_size(dummy_dir1), get_dir_size(dum));
 
-    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR};
-    dir_entry new_dummy_dir1_data{new_dummy_dir1, DEFAULT_ROOT_DIR};
-    dir_entry dum_data{dum, DEFAULT_ROOT_DIR};
+    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR, 0};
+    dir_entry new_dummy_dir1_data{new_dummy_dir1, DEFAULT_ROOT_DIR, 0};
+    dir_entry dum_data{dum, DEFAULT_ROOT_DIR, 0};
 
     compare_dir_entries(dummy_dir1_data, new_dummy_dir1_data);
     compare_dir_entries(dummy_dir1_data, dum_data);

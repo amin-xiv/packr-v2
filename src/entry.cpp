@@ -20,8 +20,48 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
+bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count) {
+    dir_entry data_inner{entry, nest_count + 1, 0};
+
+    if(!data_inner.m_success) {
+        dir.m_success = false;
+        return false;
+    }
+
+    dir.m_size += data_inner.m_size;
+    dir.m_total_entry_count++;
+    dir.m_total_dir_count++;
+
+    // Add data_inner's total counts just in case there was nested directories
+    dir.m_total_dir_count += data_inner.m_total_dir_count;
+    dir.m_total_entry_count += data_inner.m_total_entry_count;
+    dir.m_total_file_count += data_inner.m_total_file_count;
+
+    // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
+    // we can increment child counts
+    if(nest_count == 0) {
+        dir.m_child_entry_count++;
+        dir.m_child_dir_count++;
+    }
+
+    return true;
+}
+
+void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count) {
+    dir.m_size += entry.file_size();
+    dir.m_total_entry_count++;
+    dir.m_total_file_count++;
+
+    // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
+    // we can increment child counts
+    if(nest_count == 0) {
+        dir.m_child_entry_count++;
+        dir.m_child_file_count++;
+    }
+}
+
 //  NOTE: This currently doesn't take opts to know whether to take a symlink or no
-dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count) {
+dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts) {
     if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir.status())) {
         m_success = false;
         return;
@@ -33,68 +73,78 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
     m_mode = std::to_underlying(dir.symlink_status().permissions());
 
+    // const bool follows_symlinks{(opts & O_SYM) > 0};
+    const bool follows_symlinks{true};
+
     struct stat ent_stat;
+    int stat_res{};
 
     for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
+        std::error_code err;
         std::string full_path{entry.path().string()};
 
-        std::println("current entry: {}", full_path);
+        // std::println("current entry: {}", full_path);
 
-        // NOTE: Use stat() when symlinks should be followed
-        // NOTE: I think we should check if !nest_count && sym?? then we should use stat
-        // NOTE: But anyway, if this was the root dir_entry, then it should be stat anyway since since symlinked pack dirs should
-        // be followed
-        if(lstat(full_path.data(), &ent_stat) == -1) {
+        // TODO: Empty directory fails
+        // TODO: stat fails when a directory is a symlink but the target is inexistant
+        /*
+        if(follows_symlinks) {
+            stat_res = stat(full_path.data(), &ent_stat);
+        } else {
+            stat_res = lstat(full_path.data(), &ent_stat);
+        }
+
+        if(stat_res == -1) {
             m_success = false;
             return;
         }
+        */
 
-        if(fs::is_directory(entry.symlink_status())) {
-            dir_entry data_inner{entry, nest_count + 2};
+        fs::file_status ent_sym_status{entry.symlink_status()};
+        fs::file_status ent_status{entry.status()};
 
-            if(!data_inner.m_success) {
-                m_success = false;
-                return;
+        if(fs::is_directory(ent_sym_status)) {
+            if(!inc_dir_ent_dir_count(*this, entry, nest_count)) {
+                std::println(stderr, "ERROR COLLECTING DIRECTORY DATA: {}", full_path);
             }
 
-            m_size += data_inner.m_size;
-            m_total_entry_count++;
-            m_total_dir_count++;
+        } else if(fs::is_regular_file(ent_sym_status)) {
+            inc_dir_ent_file_count(*this, entry, nest_count);
 
-            // Add data_inner's total counts just in case there was nested directories
-            m_total_dir_count += data_inner.m_total_dir_count;
-            m_total_entry_count += data_inner.m_total_entry_count;
-            m_total_file_count += data_inner.m_total_file_count;
+        } else if(fs::is_symlink(ent_sym_status)) {
+            // debug
+            std::println("\n\n\nSYMLINK!!!!\n\n");
 
-            // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
-            // we can increment child counts
-            if(nest_count == 0) {
-                m_child_entry_count++;
-                m_child_dir_count++;
+            fs::path secondary_path{fs::read_symlink(entry.path(), err)};
+            if(secondary_path.string().size() == 0) {
+                std::println(stderr, "WARNING: Couldn't read symlink target path: {}", secondary_path.string());
+                std::println(stderr, "    -> symlinked by: {}", full_path);
+                inc_dir_ent_file_count(*this, entry, nest_count);
+                // std::println("WRONG symlink!!!!");
             }
 
-            std::println("added_dirname: {}", m_dirname);
-        } else {
-            if(fs::is_regular_file(entry.symlink_status())) {
-                m_size += entry.file_size();
-                m_total_entry_count++;
-                m_total_file_count++;
+            /// TODO: symlinks paths might be relative
+            fs::directory_entry secondary_entry{secondary_path};
+            if(!fs::exists(secondary_entry.symlink_status())) {
+                continue;
+            }
 
-                // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
-                // we can increment child counts
-                if(nest_count == 0) {
-                    m_child_entry_count++;
-                    m_child_file_count++;
+            if(follows_symlinks) {
+                if(fs::is_regular_file(secondary_entry)) {
+                    inc_dir_ent_file_count(*this, secondary_entry, nest_count);
+                } else if(fs::is_directory(secondary_entry)) {
+                    if(!inc_dir_ent_dir_count(*this, entry, nest_count)) {
+                        std::println(stderr, "ERROR COLLECTING (symlinked)DIRECTORY DATA: {}", secondary_path.string());
+                        std::println(stderr, "    -> symlinked by: {}", full_path);
+                    }
                 }
-
-                //  TODO: Add support for symlinks also here
-
-            } else {
             }
+
+        } else {
+            std::println(stderr, "Ignoring a special file: {}", entry.path().string());
         }
     }
 
-    // NOTE: Same here
     if(nest_count == 0) {
         struct stat root_stat;
         if(stat(dir.path().string().data(), &root_stat) == -1) {
@@ -114,6 +164,7 @@ file_entry::file_entry(const std::filesystem::path& file_path) {
     std::error_code err;
 
     struct stat file_stat;
+    // NOTE: Check here also if 'sym', by passing opts
     if(lstat(file_path.c_str(), &file_stat) == -1) {
         m_success = false;
         return;
@@ -180,12 +231,12 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         std::error_code err;
         const std::string full_path{curr_ent.path().string()};
 
-        std::println("current entry to pack: {}", full_path);
+        // std::println("current entry to pack: {}", full_path);
 
         const fs::file_status ent_sym_status{curr_ent.symlink_status(err)};
         // Returns false in case curr_ent is a symlink to a directory
         if(fs::is_directory(ent_sym_status)) {
-            dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR};
+            dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR, 0};
             if(!dir_data_inner.m_success) {
                 return false;
             }

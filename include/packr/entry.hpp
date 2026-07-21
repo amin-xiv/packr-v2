@@ -32,7 +32,7 @@ struct [[gnu::packed]] file_entry {
 struct [[gnu::packed]] dir_entry {
     // Constructors
     dir_entry() = default;
-    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count);
+    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts);
 
     char m_dirname[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink

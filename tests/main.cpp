@@ -37,12 +37,13 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     compare_time_specs(ent_stat.st_atim, dirEntry.m_acc_time);
     compare_time_specs(ent_stat.st_mtim, dirEntry.m_mod_time);
     compare_time_specs(ent_stat.st_ctim, dirEntry.m_sc_time);
-    EXPECT_EQ(dirEntry.m_child_entry_count, 2);
-    EXPECT_EQ(dirEntry.m_child_file_count, 1);
+    EXPECT_EQ(dirEntry.m_child_entry_count, 3);
+    EXPECT_EQ(dirEntry.m_child_file_count, 2);
     EXPECT_EQ(dirEntry.m_child_dir_count, 1);
-    EXPECT_EQ(dirEntry.m_total_entry_count, 7);
-    EXPECT_EQ(dirEntry.m_total_file_count, 4);
+    EXPECT_EQ(dirEntry.m_total_entry_count, 8);
+    EXPECT_EQ(dirEntry.m_total_file_count, 5);
     EXPECT_EQ(dirEntry.m_total_dir_count, 3);
+    // TODO: this must be dynamic, testing for status() when appropriate
     EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.symlink_status().permissions());
     EXPECT_EQ(dirEntry.m_type, dir_type::regular);
 }
@@ -56,7 +57,7 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryConstructorData) {
     ASSERT_TRUE(file_fs.exists()) << file_fs.path().string();
 
     // dir_entry initialization
-    file_entry fileEntry{file_fs.path().string()};
+    file_entry fileEntry{file_fs.path().string(), 0};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such

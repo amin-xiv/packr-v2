@@ -8,6 +8,12 @@
 #include <string>
 #include <print>
 
+// WARNING: From now on, only write TESTS!
+// TODO: fix the time_spec structs by replacing the unsigned ints with signed ints
+// TODO: Add tests for fs_node
+// TODO: Add tests for symlink stuff
+// TODO: Make sure appropriate data is being written into the pack file
+
 namespace fs = std::filesystem;
 
 static void print_help();

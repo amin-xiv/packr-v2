@@ -12,7 +12,7 @@ namespace packr {
 struct [[gnu::packed]] file_entry {
     // Constructors
     file_entry() = default;
-    file_entry(const std::filesystem::path& file_path);
+    file_entry(const std::filesystem::path& file_path, const u8 opts);
 
     char m_filename[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc

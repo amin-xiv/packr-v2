@@ -21,13 +21,14 @@ Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m
         m_type = dir_type::symlink;
 
         // REVISE
-        m_secondary_path = fs::read_symlink(this->m_dir_path).string();
+        m_secondary_path = fs::read_symlink(m_dir_path, err);
 
     } else if(fs::is_directory(sym_status)) {
         m_is_valid = true;
         m_type = dir_type::regular;
     } else {
         m_is_valid = false;
+        // std::println("\n PATH: {}\n", m_dir_path.string());
         m_error_message = "Unknown directory type!";
     }
 }
@@ -40,13 +41,21 @@ const fs::path& Directory::path_obj() const noexcept {
     return m_dir_path;
 }
 
+const dir_type& Directory::type() const noexcept {
+    return m_type;
+}
+
+const fs::path& Directory::secondary_path() const noexcept {
+    return m_secondary_path;
+}
+
 Directory::operator bool() const noexcept {
     return m_is_valid;
 }
 
 File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_file(m_file_path) {
-    fs::file_status sym_status{m_file.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
-    std::error_code err{};                               // Just to avoid exceptions throw by fs::is_directory
+    std::error_code err{};                                  //  To avoid exceptions
+    fs::file_status sym_status{m_file.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
 
     if(!fs::exists(sym_status) || m_file.is_directory(err)) {
         m_is_valid = false;
@@ -57,7 +66,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
         m_type = file_type::symlink;
 
         // NOTE: REVISE, both the functionality and exception safety
-        m_secondary_path = fs::read_symlink(this->m_file_path, err).string();
+        m_secondary_path = fs::read_symlink(m_file_path, err);
 
     } else if(fs::is_regular_file(sym_status)) {
         m_is_valid = true;
@@ -66,7 +75,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
     } else {
         m_is_valid = false;
         m_type = file_type::special;
-        m_error_message = std::string{"Skipping special file: "} + this->m_file_path.string();
+        m_error_message = std::string{"Skipping special file: "} + m_file_path.string();
     }
 }
 
@@ -76,6 +85,14 @@ const fs::directory_entry& File::entry_obj() const noexcept {
 
 const fs::path& File::path_obj() const noexcept {
     return m_file_path;
+}
+
+const file_type& File::type() const noexcept {
+    return m_type;
+}
+
+const fs::path& File::secondary_path() const noexcept {
+    return m_secondary_path;
 }
 
 File::operator bool() const noexcept {

@@ -60,7 +60,7 @@ void compare_dir_trees(const std::filesystem::directory_entry& base, const std::
 
         ASSERT_TRUE(sample_copy.exists());
 
-        // TODO: Check for modes(after editing it of course)
+        // TODO: Check for modes
 
         if(std::filesystem::is_regular_file(sample_copy)) {
             ASSERT_TRUE(std::filesystem::is_regular_file(entry)); // it must correspond

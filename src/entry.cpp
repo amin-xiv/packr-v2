@@ -5,6 +5,7 @@
 #include <packr/misc_structs.hpp>
 #include <filesystem>
 #include <ios>
+#include <cassert>
 #include <string>
 #include <sys/stat.h>
 #include <cstring>
@@ -60,24 +61,56 @@ void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& entry, co
     }
 }
 
-//  NOTE: This currently doesn't take opts to know whether to take a symlink or no
 dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts) {
-    if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir.status())) {
+    // No need to care whether this object is a symlink itself or not since it would be handled externally
+
+    if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir)) {
         m_success = false;
         return;
     }
-    // TODO: Add support for a symbolic dir_entry
 
     // Other members are default intialized during construction
     m_entry_class = (nest_count - 1) == 0 ? entry_class_t::CHILD_ENT : entry_class_t::NESTED_ENT;
     add_dirname(this, "", std::string{dir.path().string().data(), dir.path().string().size()});
-    m_mode = std::to_underlying(dir.symlink_status().permissions());
 
-    // const bool follows_symlinks{(opts & O_SYM) > 0};
-    const bool follows_symlinks{true};
+    // const bool follow_symlinks{(opts & O_SYM) > 0};
+    // NOTE: Debug-only statement
+    const bool follow_symlinks{true};
 
-    struct stat ent_stat;
+    Directory main_dir_obj{dir.path()};
+    bool symlink_target_exists{};
+
+    struct stat main_stat;
     int stat_res{};
+
+    if(!main_dir_obj) {
+        m_success = false;
+        return;
+    }
+
+    if(main_dir_obj.type() == dir_type::symlink && !main_dir_obj.secondary_path().empty()) {
+        symlink_target_exists = true;
+    } // else it would remain false
+
+    if(follow_symlinks && symlink_target_exists) {
+        stat_res = stat(dir.path().c_str(), &main_stat);
+
+    } else {
+        stat_res = lstat(dir.path().c_str(), &main_stat); // lstat works well with regular files and broken symlinks
+    }
+
+    if(stat_res == -1) {
+        m_success = false;
+        return;
+    }
+
+    m_acc_time = {.sec = static_cast<u64>(main_stat.st_atim.tv_sec), .nsec = static_cast<u64>(main_stat.st_atim.tv_nsec)};
+    m_mod_time = {.sec = static_cast<u64>(main_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(main_stat.st_mtim.tv_nsec)};
+    m_sc_time = {.sec = static_cast<u64>(main_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(main_stat.st_ctim.tv_nsec)};
+
+    m_mode = std::to_underlying((follow_symlinks && symlink_target_exists)
+                                    ? (main_dir_obj.entry_obj().status().permissions())
+                                    : (main_dir_obj.entry_obj().symlink_status().permissions()));
 
     for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
         std::error_code err;
@@ -85,20 +118,8 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
         // std::println("current entry: {}", full_path);
 
-        // TODO: Empty directory fails
-        // TODO: stat fails when a directory is a symlink but the target is inexistant
-        /*
-        if(follows_symlinks) {
-            stat_res = stat(full_path.data(), &ent_stat);
-        } else {
-            stat_res = lstat(full_path.data(), &ent_stat);
-        }
-
-        if(stat_res == -1) {
-            m_success = false;
-            return;
-        }
-        */
+        // TODO: Empty directory fails??
+        // TODO: Assignment of branching metadata should be done inside the separate called functions
 
         fs::file_status ent_sym_status{entry.symlink_status()};
         fs::file_status ent_status{entry.status()};
@@ -120,16 +141,15 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                 std::println(stderr, "WARNING: Couldn't read symlink target path: {}", secondary_path.string());
                 std::println(stderr, "    -> symlinked by: {}", full_path);
                 inc_dir_ent_file_count(*this, entry, nest_count);
-                // std::println("WRONG symlink!!!!");
+                continue;
             }
 
-            /// TODO: symlinks paths might be relative
             fs::directory_entry secondary_entry{secondary_path};
             if(!fs::exists(secondary_entry.symlink_status())) {
                 continue;
             }
 
-            if(follows_symlinks) {
+            if(follow_symlinks) {
                 if(fs::is_regular_file(secondary_entry)) {
                     inc_dir_ent_file_count(*this, secondary_entry, nest_count);
                 } else if(fs::is_directory(secondary_entry)) {
@@ -145,38 +165,38 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
-    if(nest_count == 0) {
-        struct stat root_stat;
-        if(stat(dir.path().string().data(), &root_stat) == -1) {
-            return;
-        }
-
-        m_acc_time = {.sec = static_cast<u64>(root_stat.st_atim.tv_sec), .nsec = static_cast<u64>(root_stat.st_atim.tv_nsec)};
-        m_mod_time = {.sec = static_cast<u64>(root_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(root_stat.st_mtim.tv_nsec)};
-        m_sc_time = {.sec = static_cast<u64>(root_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(root_stat.st_ctim.tv_nsec)};
-    }
-
     m_success = true;
 }
 
-file_entry::file_entry(const std::filesystem::path& file_path) {
-    // Dummy error code object to avoid exceptions
-    std::error_code err;
+file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
+    std::error_code err; // To avoid exceptions
+
+    const bool follow_symlinks{(opts & O_SYM) > 0};
+    bool symlink_target_exists{};
+    File file_obj{file_path};
+
+    if(!file_obj) {
+        m_success = false;
+        return;
+    }
+
+    if(file_obj.type() == file_type::symlink && !file_obj.secondary_path().empty()) {
+        symlink_target_exists = true;
+    }
 
     struct stat file_stat;
-    // NOTE: Check here also if 'sym', by passing opts
-    if(lstat(file_path.c_str(), &file_stat) == -1) {
-        m_success = false;
-        return;
+    int stat_res{};
+
+    if(follow_symlinks && symlink_target_exists) {
+        stat_res = stat(file_path.c_str(), &file_stat);
+
+    } else {
+        stat_res = lstat(file_path.c_str(), &file_stat); // lstat works well with regular files and broken symlinks
     }
 
-    File file{file_path};
-    if(!file) {
-        m_success = false;
-        return;
-    }
-
-    if(!fs::exists(file.entry_obj().symlink_status())) {
+    assert(stat_res != -1);
+    // TEST: case
+    if(stat_res == -1) {
         m_success = false;
         return;
     }
@@ -184,26 +204,26 @@ file_entry::file_entry(const std::filesystem::path& file_path) {
     const std::string& actual_filename{file_path.filename().string()};
     std::strcpy(m_filename, actual_filename.data());
 
-    // TODO: SYMLINKSS!!
     m_size = fs::file_size(file_path, err);
     if(err) { // i.e. if err.value() > 0
         m_success = false;
         return;
     }
 
-    m_filename_length = actual_filename.length(); // +1 to count the \0
+    m_filename_length = actual_filename.length();
 
     m_acc_time = {.sec = static_cast<u64>(file_stat.st_atim.tv_sec), .nsec = static_cast<u64>(file_stat.st_atim.tv_nsec)};
     m_mod_time = {.sec = static_cast<u64>(file_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(file_stat.st_mtim.tv_nsec)};
     m_sc_time = {.sec = static_cast<u64>(file_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(file_stat.st_ctim.tv_nsec)};
 
-    if(fs::is_regular_file(file.entry_obj().symlink_status())) {
-        m_type = file_type::regular;
-    }
+    m_type = file_obj.type();
 
-    m_mode = std::to_underlying((file.entry_obj().symlink_status().permissions()));
+    m_mode =
+        std::to_underlying((follow_symlinks && symlink_target_exists) ? (file_obj.entry_obj().status().permissions())
+                                                                      : (file_obj.entry_obj().symlink_status().permissions()));
     m_success = true;
 }
+
 bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
     dir_entry dir_header_copy{*this};
 
@@ -256,7 +276,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         } else if(fs::is_symlink(ent_sym_status)) {
             // NOTE: I guess I have to then pass the linked-to directory to this function again? (recurse 🌚)
         } else if(fs::is_regular_file(ent_sym_status)) {
-            file_entry file_data{full_path};
+            file_entry file_data{full_path, opts};
             if(!file_data.m_success) {
                 return false;
             }
@@ -287,6 +307,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
                 }
 
                 // TODO: file_data.size() must not be greater than std::streamsize
+                // Maybe use sendfile()?
                 if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
                     return false;
                 }

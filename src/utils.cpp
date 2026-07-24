@@ -1,3 +1,4 @@
+#include "packr/types.hpp"
 #include <filesystem>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
@@ -50,9 +51,11 @@ std::optional<std::string> extract_filename(std::string_view path) {
     return filename;
 }
 
-u64 get_dir_size(const fs::directory_entry& dir) {
+u64 get_dir_size(const fs::directory_entry& dir /*, const u8 opts*/) {
     // dummy error code
     std::error_code err;
+    // const bool sym{(opts & O_SYM) > 0};
+    const bool sym{true};
 
     u64 size{};
 
@@ -64,8 +67,12 @@ u64 get_dir_size(const fs::directory_entry& dir) {
                                                     : dir.path()}; // In case the provided path refers to a sym_link
 
     for(const fs::directory_entry& ent : std::filesystem::recursive_directory_iterator(real_dir_path)) {
-        if(fs::is_regular_file(ent.symlink_status())) {
+        const fs::file_status ent_sym_status(ent.symlink_status());
+
+        if(fs::is_regular_file(ent_sym_status)) {
             size += fs::file_size(ent, err);
+        } else if(fs::is_symlink(ent_sym_status) && sym) {
+            size += fs::directory_entry{fs::read_symlink(ent, err)}.file_size(err);
         }
     }
 

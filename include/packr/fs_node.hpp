@@ -13,13 +13,15 @@ class Directory {
     Directory(std::filesystem::path dir_path);
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
+    [[nodiscard]] const dir_type& type() const noexcept;
+    [[nodiscard]] const std::filesystem::path& secondary_path() const noexcept;
     operator bool() const noexcept;
 
   private:
     const std::filesystem::path m_dir_path;
     const std::filesystem::directory_entry m_directory;
     dir_type m_type;
-    std::string m_secondary_path; // Points to target directory if it's a symlink
+    std::filesystem::path m_secondary_path; // Points to target directory if it's a symlink
     bool m_is_valid{};
     std::string m_error_message;
 };
@@ -31,6 +33,8 @@ class File {
     File(const std::filesystem::path& file_path);
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
+    [[nodiscard]] const file_type& type() const noexcept;
+    [[nodiscard]] const std::filesystem::path& secondary_path() const noexcept;
     operator bool() const noexcept;
     void refresh() noexcept;
 
@@ -38,7 +42,7 @@ class File {
     const std::filesystem::path m_file_path;
     std::filesystem::directory_entry m_file;
     file_type m_type;
-    std::string m_secondary_path; // points to block device path, target path(if symlink)..etc
+    std::filesystem::path m_secondary_path; // points to block device path, target path(if symlink)..etc
     bool m_is_valid{};
     std::string m_error_message;
 };

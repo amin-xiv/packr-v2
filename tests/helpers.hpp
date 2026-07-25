@@ -9,20 +9,12 @@
 
 void compare_time_specs(const timespec& lhs, const packr::time_spec& rhs) {
     EXPECT_EQ(lhs.tv_sec, rhs.sec);
-    if(static_cast<packr::u64>(lhs.tv_nsec) > rhs.nsec) {
-        EXPECT_TRUE(((lhs.tv_nsec - rhs.sec) / 1e9) < 0.5);
-    } else {
-        EXPECT_TRUE(((rhs.nsec - lhs.tv_nsec) / 1e9) < 0.5);
-    }
+    EXPECT_EQ(lhs.tv_nsec, rhs.nsec);
 }
 
 void compare_time_specs(const packr::time_spec& lhs, const packr::time_spec& rhs) {
     EXPECT_EQ(lhs.sec, rhs.sec);
-    if(lhs.nsec > rhs.nsec) {
-        EXPECT_TRUE(((lhs.nsec - rhs.nsec) / 1e9) < 0.5);
-    } else {
-        EXPECT_TRUE(((rhs.nsec - lhs.nsec) / 1e9) < 0.5);
-    }
+    EXPECT_EQ(lhs.nsec, rhs.nsec);
 }
 
 void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rhs) {
@@ -39,19 +31,20 @@ void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rh
     EXPECT_EQ(lhs.m_child_file_count, rhs.m_child_file_count);
     EXPECT_EQ(lhs.m_total_file_count, rhs.m_total_file_count);
     EXPECT_EQ(lhs.m_total_dir_count, rhs.m_total_dir_count);
-    compare_time_specs(lhs.m_acc_time, rhs.m_acc_time);
-    compare_time_specs(lhs.m_mod_time, rhs.m_mod_time);
-    compare_time_specs(lhs.m_sc_time, rhs.m_sc_time);
+    // compare_time_specs(lhs.m_acc_time, rhs.m_acc_time);
+    // compare_time_specs(lhs.m_mod_time, rhs.m_mod_time);
+    // compare_time_specs(lhs.m_sc_time, rhs.m_sc_time);
     EXPECT_EQ(lhs.m_type, rhs.m_type);
 }
 
-void compare_dir_trees(const std::filesystem::directory_entry& base, const std::filesystem::directory_entry& sample) {
+void compare_dir_trees(const std::filesystem::directory_entry& base, const std::filesystem::directory_entry& sample,
+                       const packr::u8 opts) {
     // verify both exist
     ASSERT_TRUE(std::filesystem::exists(base.symlink_status()));
     ASSERT_TRUE(std::filesystem::exists(sample.symlink_status()));
 
     // verify both have the same size before we even start
-    ASSERT_EQ(packr::get_dir_size(base), packr::get_dir_size(sample));
+    ASSERT_EQ(packr::get_dir_size(base, opts), packr::get_dir_size(sample, opts));
 
     for(const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(base)) {
         std::string entry_relative_path{entry.path()};

@@ -28,16 +28,12 @@ jobs:
         run: cmake --build . --parallel 8
         working-directory: build
 
-      - name: Setup tests - debug
-        run: bash ./tests-setup.sh
-        working-directory: scripts
 
       - name: Upload build directory
         uses: actions/upload-artifact@v4
         with:
           name: build-directory-debug
           path: ./build
-
 
   test-debug:
       needs: build-debug
@@ -56,9 +52,15 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x main_tests && chmod +x side_tests && chmod +x packr
+        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests
         working-directory: build
 
+      - name: Setup tests - debug
+        run: bash ../scripts/tests-setup.sh
+        working-directory: build
+
+      - run: ls && ls -R && tree
+        working-directory: build
 
       - name: run tests
         run: ctest  --output-on-failure
@@ -88,16 +90,12 @@ jobs:
         run: cmake --build . --parallel 8
         working-directory: build
 
-      - name: Setup tests - debug
-        run: bash ./tests-setup.sh
-        working-directory: scripts
 
       - name: Upload build directory
         uses: actions/upload-artifact@v4
         with:
           name: build-directory-release
           path: ./build
-
 
   test-release:
       needs: build-release
@@ -116,9 +114,15 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x main_tests && chmod +x side_tests && chmod +x packr
+        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests
         working-directory: build
 
+      - name: Setup tests - debug
+        run: bash ../scripts/tests-setup.sh
+        working-directory: build
+
+      - run: ls && ls -R && tree
+        working-directory: build
 
       - name: run tests
         run: ctest  --output-on-failure

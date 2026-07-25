@@ -9,10 +9,13 @@
 #include <print>
 
 // WARNING: From now on, only write TESTS!
+// BUG: Program halts(and tests fail) in case of a broken file symlink
+// BUG: Program halts(and tests fail) in case of a symlinked dir
 // TODO: fix the time_spec structs by replacing the unsigned ints with signed ints
+// TODO: Recreate symlinks as symlinks on unpack
 // TODO: Add tests for fs_node
 // TODO: Add tests for symlink stuff
-// TODO: Make sure appropriate data is being written into the pack file
+// TODO: Add tests for for every single newley created helper function
 
 namespace fs = std::filesystem;
 
@@ -48,7 +51,7 @@ int main(int argc, char** argv) {
             break;
 
         case 's':
-
+            opts |= packr::O_SYM;
             break;
 
         case 'l':
@@ -96,7 +99,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        packr::pack_header dir_data{dir_ent, packr::DEFAULT_ROOT_DIR, 0};
+        packr::pack_header dir_data{dir_ent, packr::DEFAULT_ROOT_DIR, opts};
         if(!dir_data.m_success) {
             std::println(stderr, "pack_header constructor: {}", std::strerror(errno));
             return 1;
@@ -117,7 +120,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        if(!dir_data.pack(dir_ent, pack_file_stream, packr::DEFAULT_ROOT_DIR)) {
+        if(!dir_data.pack(dir_ent, pack_file_stream, opts)) {
             perror("pack()");
             std::println(stderr, "pack(): {}", strerror(errno));
             return 1;
@@ -130,7 +133,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        if(!packr::dir_entry::unpack(pack_file, 0)) {
+        if(!packr::dir_entry::unpack(pack_file, opts)) {
             std::println(stderr, "unpack(): {}", strerror(errno));
             return 1;
         }

@@ -34,17 +34,35 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
-add_executable(main_tests
-	./tests/main.cpp
+include(GoogleTest)
+
+add_executable(packing_tests
+	./tests/packing.cpp
 	./src/utils.cpp
 	./src/entry.cpp
 	./src/fs_node.cpp
 )
-add_executable(side_tests ./tests/side_tests.cpp ./src/utils.cpp)
-include(GoogleTest)
-target_link_libraries(main_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
+
+add_executable(unpacking_tests
+	./tests/unpacking.cpp
+	./src/utils.cpp
+	./src/entry.cpp
+	./src/fs_node.cpp
+)
+
+add_executable(side_tests
+	./tests/side_tests.cpp
+	./src/utils.cpp
+)
+
+target_link_libraries(packing_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
+target_link_libraries(unpacking_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
 target_link_libraries(side_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_include_directories(main_tests PRIVATE ./include)
+
+target_include_directories(packing_tests PRIVATE ./include)
+target_include_directories(unpacking_tests PRIVATE ./include)
 target_include_directories(side_tests PRIVATE ./include)
-gtest_discover_tests(main_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+gtest_discover_tests(packing_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+gtest_discover_tests(unpacking_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 gtest_discover_tests(side_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cp -r ../tests/test-data/dummy_dir1/ ../build/
+ln -s $(pwd)/../tests/test-data/dummy_dir1/ dummy_dir1

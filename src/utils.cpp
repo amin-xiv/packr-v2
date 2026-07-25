@@ -51,11 +51,10 @@ std::optional<std::string> extract_filename(std::string_view path) {
     return filename;
 }
 
-u64 get_dir_size(const fs::directory_entry& dir /*, const u8 opts*/) {
+u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
     // dummy error code
     std::error_code err;
-    // const bool sym{(opts & O_SYM) > 0};
-    const bool sym{true};
+    const bool sym{(opts & O_SYM) > 0};
 
     u64 size{};
 

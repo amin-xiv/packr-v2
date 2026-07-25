@@ -65,7 +65,7 @@ class File_W : public File {
     using File::File; // Inherits constructor from File class
 
     [[nodiscard]] bool setup_stream(const open_type type);
-    [[nodiscard]] bool write(char* buffer, std::streamsize count);
+    [[nodiscard]] bool write(const char* buffer, std::streamsize count);
 
   private:
     std::ofstream m_stream;

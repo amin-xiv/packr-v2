@@ -148,7 +148,7 @@ bool File_W::setup_stream(const open_type type) {
     return m_stream.is_open();
 }
 
-bool File_W::write(char* buffer, std::streamsize count) {
+bool File_W::write(const char* buffer, std::streamsize count) {
     if(!m_stream.is_open() || buffer == nullptr) {
         return false;
     }

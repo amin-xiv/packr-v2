@@ -52,7 +52,7 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests
+        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests && chmod +x dir_entry && chmod +x file_entry
         working-directory: build
 
       - name: Setup tests - debug
@@ -114,7 +114,7 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests
+        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests && chmod +x dir_entry && chmod +x file_entry
         working-directory: build
 
       - name: Setup tests - debug

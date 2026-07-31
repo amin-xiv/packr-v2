@@ -204,10 +204,12 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     const std::string& actual_filename{file_path.filename().string()};
     std::strcpy(m_filename, actual_filename.data());
 
-    m_size = fs::file_size(file_path, err);
-    if(err) { // i.e. if err.value() > 0
-        m_success = false;
-        return;
+    if((follow_symlinks && symlink_target_exists) || file_obj.type() != file_type::symlink) {
+        m_size = fs::file_size(file_path, err);
+        if(err) { // i.e. if err.value() > 0
+            m_success = false;
+            return;
+        }
     }
 
     m_filename_length = actual_filename.length();
@@ -293,7 +295,8 @@ static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_
         // All other cases grouped here because:
         // 1) If follow_symlinks and it's not a regular file then simply adding its metadata would be enough
         // 2) If !follow_symlinks then it'd also be treated as a regular file
-        bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts ^ O_SYM)};
+        bool res{
+            pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, follow_symlinks ? (opts ^ O_SYM) : opts)};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
     }
 }
@@ -507,10 +510,6 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
 
     u8 pack_file_opts{};
     if(!pack_file.read(reinterpret_cast<char*>(&pack_file_opts), sizeof(opts))) {
-        return false;
-    }
-
-    if(pack_start_marker.type != PACK_START) {
         return false;
     }
 

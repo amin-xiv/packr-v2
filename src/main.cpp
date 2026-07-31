@@ -9,13 +9,15 @@
 #include <print>
 
 // WARNING: From now on, only write TESTS!
-// BUG: Program halts(and tests fail) in case of a broken file symlink
 // BUG: Program halts(and tests fail) in case of a symlinked dir
+// BUG: test-setup.sh halts testing when ran twice
 // TODO: fix the time_spec structs by replacing the unsigned ints with signed ints
+// TODO: symlinks might be relative
 // TODO: Recreate symlinks as symlinks on unpack
 // TODO: Add tests for fs_node
 // TODO: Add tests for symlink stuff
 // TODO: Add tests for for every single newley created helper function
+// TODO: Find a way to test the time stuff
 
 namespace fs = std::filesystem;
 

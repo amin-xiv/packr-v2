@@ -1,4 +1,5 @@
-#include "packr/types.hpp"
+#include <packr/types.hpp>
+#include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <system_error>
 #include <filesystem>
@@ -7,7 +8,6 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
-// NOTE: should I read symlinks here??
 Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m_dir_path) {
     std::error_code err{};                                    // Just to avoid exceptions throw by fs::is_directory
     fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
@@ -57,9 +57,8 @@ Directory::operator bool() const noexcept {
 File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_file(m_file_path) {
     std::error_code err{};                                  //  To avoid exceptions
     fs::file_status sym_status{m_file.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
-    fs::directory_entry file_ent{file_path, err};
 
-    if(!fs::exists(sym_status) || m_file.is_directory(err)) {
+    if(!fs::exists(sym_status)) {
         m_is_valid = false;
         m_error_message = std::string{"The path "} + file_path.string() + std::string{" doesn't point to a valid file!"};
 
@@ -69,19 +68,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
 
         // NOTE: REVISE, both the functionality and exception safety
         // NOTE: tests
-        const fs::path secondary_path{fs::read_symlink(m_file_path, err)};
-        const fs::directory_entry secondary_ent{secondary_path, err};
-        if(!secondary_path.empty()) {
-            if(secondary_path.is_absolute()) {
-                m_secondary_path = fs::exists(secondary_ent.symlink_status(err)) ? secondary_path : m_secondary_path;
-            } else {
-                fs::path target_parent_dir{file_path.parent_path()};
-                fs::directory_entry symlink_target_path{target_parent_dir / secondary_path, err};
-                fs::directory_entry symlink_target_ent{symlink_target_path, err};
-                // m_secondary_path won't change if it target doesn't exist
-                m_secondary_path = fs::exists(symlink_target_ent.symlink_status(err)) ? symlink_target_path : m_secondary_path;
-            }
-        }
+        m_secondary_path = packr::read_symlink(m_file_path);
 
     } else if(fs::is_regular_file(sym_status)) {
         m_is_valid = true;

@@ -136,7 +136,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             // debug
             std::println("\n\n\nSYMLINK!!!!\n\n");
 
-            fs::path secondary_path{fs::read_symlink(entry.path(), err)};
+            // NOTE: Check functionality
+            fs::path secondary_path{packr::read_symlink(entry.path())};
+
             fs::directory_entry secondary_entry{secondary_path, err};
             if(secondary_path.empty() || !fs::exists(secondary_entry.symlink_status())) {
                 std::println(stderr, "WARNING: Couldn't read symlink target path: {}", secondary_path.string());
@@ -277,18 +279,45 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
     return true;
 }
 
+static bool pack_handle_dir(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
+                            const u32 nest_count) {
+    dir_entry dir_data_inner{entry, DEFAULT_ROOT_DIR, opts};
+    if(!dir_data_inner.m_success) {
+        return false;
+    }
+
+    if(!dir_data_inner.pack_dir(entry, pack_file, opts, nest_count + 1)) {
+        return false;
+    }
+
+    dir_header_copy.m_total_dir_count--;
+    dir_header_copy.m_total_entry_count--;
+
+    if(nest_count == 0) {
+        dir_header_copy.m_child_entry_count--;
+        dir_header_copy.m_child_dir_count--;
+    }
+
+    return true;
+}
+
 static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
                                 const u32 nest_count) {
     std::error_code err;
     const bool follow_symlinks{(opts & O_SYM) > 0};
-    fs::file_status entry_status{entry.status()};
     const std::string full_path{entry.path().string()};
+    fs::path target_path{packr::read_symlink(entry.path())};
 
-    if(follow_symlinks && fs::is_regular_file(entry_status)) {
-        fs::path target_path{fs::read_symlink(entry.path())};
-        bool res{pack_handle_regular_file(target_path.string(), dir_header_copy, pack_file, nest_count, opts)};
-
+    if(follow_symlinks && fs::is_regular_file(entry, err)) {
         assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
+
+        bool res{pack_handle_regular_file(target_path.string(), dir_header_copy, pack_file, nest_count, opts)};
+        assert(res && "Failed to handle regular file while handling its corrosponding symlink");
+
+    } else if(follow_symlinks && fs::is_directory(entry, err)) {
+        assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
+
+        bool res{pack_handle_dir(dir_header_copy, entry, pack_file, opts, nest_count)};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
 
     } else {
@@ -323,7 +352,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }
     }
 
-    // NOTE: Start here
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
         std::error_code err;
         const std::string full_path{curr_ent.path().string()};
@@ -334,25 +362,10 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         // Returns false in case curr_ent is a symlink to a directory
         if(fs::is_directory(ent_sym_status)) {
-            dir_entry dir_data_inner{curr_ent, DEFAULT_ROOT_DIR, 0};
-            if(!dir_data_inner.m_success) {
-                return false;
-            }
-
-            if(!dir_data_inner.pack_dir(curr_ent, pack_file, opts, nest_count + 1)) {
-                return false;
-            }
-
-            dir_header_copy.m_total_dir_count--;
-            dir_header_copy.m_total_entry_count--;
-
-            if(nest_count == 0) {
-                dir_header_copy.m_child_entry_count--;
-                dir_header_copy.m_child_dir_count--;
-            }
+            bool res{pack_handle_dir(dir_header_copy, curr_ent, pack_file, opts, nest_count)};
+            assert(res && "Handling a directory failed");
 
         } else if(fs::is_symlink(ent_sym_status)) {
-            // NOTE: I guess I have to then pass the linked-to directory to this function again? (recurse 🌚)
             pack_handle_symlink(dir_header_copy, curr_ent, pack_file, opts, nest_count + 1);
 
         } else if(fs::is_regular_file(ent_sym_status)) {

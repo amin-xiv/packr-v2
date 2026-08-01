@@ -21,4 +21,6 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 void print_dir_data(const dir_entry& dir_data) noexcept;
 
 std::string create_pack_filename(const dir_entry& dir_data);
+
+std::filesystem::path read_symlink(const std::filesystem::path& path);
 } // namespace packr

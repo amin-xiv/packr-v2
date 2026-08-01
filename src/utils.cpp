@@ -3,6 +3,7 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <print>
+#include <cassert>
 #include <unistd.h>
 #include <cstring>
 #include <optional>
@@ -121,6 +122,31 @@ std::string create_pack_filename(const dir_entry& dir_data) {
     pack_filename += dir_data.m_dirname;
     pack_filename += extension;
     return pack_filename;
+}
+
+fs::path read_symlink(const fs::path& path) {
+    assert(!path.empty() && "Tried to read a symlink of an empty path");
+    assert(fs::exists({fs::directory_entry{path}.symlink_status()}) && "Tried to read a symlink of a nonexistent entry");
+
+    std::error_code err{};
+
+    const fs::path secondary_path{fs::read_symlink(path, err)};
+    const fs::directory_entry secondary_ent{secondary_path, err};
+    fs::path res{}; // what's going to be returned
+
+    if(!secondary_path.empty()) {
+        if(secondary_path.is_absolute()) {
+            res = fs::exists(secondary_ent.symlink_status(err)) ? secondary_path : res;
+        } else {
+            fs::path target_parent_dir{path.parent_path()};
+            fs::path symlink_target_path{target_parent_dir / secondary_path};
+            fs::directory_entry symlink_target_ent{symlink_target_path, err};
+            // m_secondary_path won't change if its target doesn't exist
+            res = fs::exists(symlink_target_ent.symlink_status(err)) ? symlink_target_path : res;
+        }
+    }
+
+    return res;
 }
 
 } // namespace packr

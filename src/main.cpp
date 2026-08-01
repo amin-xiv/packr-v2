@@ -8,16 +8,19 @@
 #include <string>
 #include <print>
 
+// DONE: Program halts(and tests fail) in case of a symlinked dir
 // WARNING: From now on, only write TESTS!
-// BUG: Program halts(and tests fail) in case of a symlinked dir
-// BUG: test-setup.sh halts testing when ran twice
+// BUG: Program halts(and tests fail) in case of a broken symlinked dir
+// TODO: *symlinked dire support
+// TODO: Add tests with O_SYM
+// TODO: Recreate symlinks as symlinks on unpack
 // TODO: fix the time_spec structs by replacing the unsigned ints with signed ints
 // TODO: symlinks might be relative
-// TODO: Recreate symlinks as symlinks on unpack
 // TODO: Add tests for fs_node
 // TODO: Add tests for symlink stuff
 // TODO: Add tests for for every single newley created helper function
 // TODO: Find a way to test the time stuff
+// TODO: If O_SYM, then symlink targets must be included in the size
 
 namespace fs = std::filesystem;
 

@@ -14,7 +14,6 @@
 // TODO: *symlinked dire support
 // TODO: Add tests with O_SYM
 // TODO: Recreate symlinks as symlinks on unpack
-// TODO: fix the time_spec structs by replacing the unsigned ints with signed ints
 // TODO: symlinks might be relative
 // TODO: Add tests for fs_node
 // TODO: Add tests for symlink stuff

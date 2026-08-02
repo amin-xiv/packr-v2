@@ -104,9 +104,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         return;
     }
 
-    m_acc_time = {.sec = static_cast<u64>(main_stat.st_atim.tv_sec), .nsec = static_cast<u64>(main_stat.st_atim.tv_nsec)};
-    m_mod_time = {.sec = static_cast<u64>(main_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(main_stat.st_mtim.tv_nsec)};
-    m_sc_time = {.sec = static_cast<u64>(main_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(main_stat.st_ctim.tv_nsec)};
+    m_acc_time = {.sec = main_stat.st_atim.tv_sec, .nsec = main_stat.st_atim.tv_nsec};
+    m_mod_time = {.sec = main_stat.st_mtim.tv_sec, .nsec = main_stat.st_mtim.tv_nsec};
+    m_sc_time = {.sec = main_stat.st_ctim.tv_sec, .nsec = main_stat.st_ctim.tv_nsec};
 
     m_mode = std::to_underlying((follow_symlinks && symlink_target_exists) || nest_count == 0
                                     ? (main_dir_obj.entry_obj().status().permissions())
@@ -216,9 +216,9 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
     m_filename_length = actual_filename.length();
 
-    m_acc_time = {.sec = static_cast<u64>(file_stat.st_atim.tv_sec), .nsec = static_cast<u64>(file_stat.st_atim.tv_nsec)};
-    m_mod_time = {.sec = static_cast<u64>(file_stat.st_mtim.tv_sec), .nsec = static_cast<u64>(file_stat.st_mtim.tv_nsec)};
-    m_sc_time = {.sec = static_cast<u64>(file_stat.st_ctim.tv_sec), .nsec = static_cast<u64>(file_stat.st_ctim.tv_nsec)};
+    m_acc_time = {.sec = file_stat.st_atim.tv_sec, .nsec = file_stat.st_atim.tv_nsec};
+    m_mod_time = {.sec = file_stat.st_mtim.tv_sec, .nsec = file_stat.st_mtim.tv_nsec};
+    m_sc_time = {.sec = file_stat.st_ctim.tv_sec, .nsec = file_stat.st_ctim.tv_nsec};
 
     m_type = file_obj.type();
 

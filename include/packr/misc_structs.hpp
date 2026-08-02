@@ -9,8 +9,8 @@ struct special_marker {
 };
 
 struct time_spec {
-    u64 sec;
-    u64 nsec;
+    i64 sec;
+    i64 nsec;
 };
 
 }; // namespace packr

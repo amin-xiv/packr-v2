@@ -3,6 +3,19 @@ run-name: Build and test
 
 on: [push]
 
+env:
+  # To set executable permissions after downloading the build artifacts
+  CHMOD_CMD: >
+    pwd && ls -R &&
+    chmod +x
+    ./packr
+    ./tests/packing_tests
+    ./tests/side_tests
+    ./tests/unpacking_tests
+    ./tests/dir_entry
+    ./tests/file_entry
+    ./tests/fs_node
+
 jobs:
   build-debug:
     runs-on: ubuntu-latest
@@ -52,7 +65,7 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests && chmod +x dir_entry && chmod +x file_entry
+        run: bash -c "$CHMOD_CMD"
         working-directory: build
 
       - name: Setup tests - debug
@@ -114,7 +127,7 @@ jobs:
           path: build
 
       - name: set execution permissions
-        run: chmod +x packr && chmod +x packing_tests && chmod +x side_tests && chmod +x unpacking_tests && chmod +x dir_entry && chmod +x file_entry
+        run: bash -c "$CHMOD_CMD"
         working-directory: build
 
       - name: Setup tests - debug

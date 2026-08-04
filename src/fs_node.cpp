@@ -22,7 +22,7 @@ Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m
         m_type = dir_type::symlink;
 
         // REVISE
-        m_secondary_path = fs::read_symlink(m_dir_path, err);
+        m_secondary_path = packr::read_symlink(m_dir_path);
 
     } else if(fs::is_directory(sym_status)) {
         m_is_valid = true;

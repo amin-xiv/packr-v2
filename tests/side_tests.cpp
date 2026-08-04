@@ -92,3 +92,26 @@ TEST(otherMacrosAndConstants, mainTests) {
     EXPECT_EQ(DEFAULT_ROOT_DIR, 0);
     EXPECT_EQ(O_SYM, 0B00000001);
 }
+
+TEST(curateSrcPath, main) {
+    // First with an aboslute path
+    std::string absolute_path{"/home/some_random_dir"};
+    std::string absolute_path_copy{absolute_path};
+    EXPECT_TRUE(curate_src_path(absolute_path));
+    EXPECT_EQ(absolute_path, absolute_path_copy);
+
+    // Now with a relative path
+    std::string relative_path{"directory/file"};
+    std::string correct_path{fs::current_path() / relative_path};
+    EXPECT_TRUE(curate_src_path(relative_path));
+    EXPECT_EQ(relative_path, correct_path);
+}
+
+TEST(createPackFilename, main) {
+    std::string dir_name{"name"};
+    dir_entry dir{};
+    memcpy(dir.m_dirname, dir_name.c_str(), dir_name.length());
+    dir.m_dirname_length = dir_name.length();
+    std::string res{create_pack_filename(dir)};
+    EXPECT_EQ(res, dir_name + ".packr");
+}

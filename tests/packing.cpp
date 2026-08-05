@@ -2,10 +2,10 @@
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
 #include "shared_test_data.hpp"
-// #include "helpers.hpp"
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
+#include <tuple>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <filesystem>
@@ -16,7 +16,7 @@ TEST_F(packingAndUnpackingTestdata, packFilename) {
     std::error_code err;
     // New directory to contain the results of these tests
     // make sure that it's already fresh and deleted
-    ASSERT_NE(system(std::string{"rm -rf " + playground_dirname}.data()), -1); // suppress unused variable warning
+    std::ignore = system(std::string{"rm -rf " + playground_dirname}.data());
     fs::create_directory(playground_dirname, err);
     fs::current_path(playground_dirname, err);
 
@@ -29,7 +29,7 @@ TEST_F(packingAndUnpackingTestdata, packFilename) {
     ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name}.data()), 0);
     EXPECT_TRUE(fs::directory_entry{dummy_dir1_name + extension}.exists());
 
-    // this time with a custom name
-    ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name + " -a" + dum_dirname}.data()), 0);
+    // this time with a custom name + while following symlinks
+    ASSERT_EQ(system(std::string{packr + " -p -l ../" + dummy_dir1_name + " -s -a " + dum_dirname}.data()), 0);
     EXPECT_TRUE(fs::directory_entry{dum_dirname + extension}.exists());
 }

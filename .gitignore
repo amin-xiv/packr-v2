@@ -49,3 +49,5 @@ lib/
 # Extras
 compile_commands.json
 .cache/
+play.cpp
+Testing/

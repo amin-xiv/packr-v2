@@ -14,8 +14,13 @@
 // TODO: If O_SYM, then symlink targets must be included in the size
 // TODO: Add tests with O_SYM
 // TODO: Recreate symlinks as symlinks on unpack
-// TODO: packr::read_symlink should return the final target symlink
+// TODO: Circular symlinks
+// TODO: packr::read_symlink should return the final target symlink, + add tests for it
+// TODO: symlinked directories name on reconstruction must be the same as the target
+// TODO: m_size must be the same as the value returned by get_dir_size()
+
 // TODO: Find a way to test the time stuff
+// TODO: compare_dir_trees doesn't compare timestamps
 
 namespace fs = std::filesystem;
 

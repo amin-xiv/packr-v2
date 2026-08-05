@@ -63,16 +63,24 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
         return -1;
     }
 
-    fs::path real_dir_path{fs::is_symlink(dir, err) ? fs::read_symlink(dir)
+    fs::path real_dir_path{fs::is_symlink(dir, err) ? fs::canonical(dir)
                                                     : dir.path()}; // In case the provided path refers to a sym_link
 
-    for(const fs::directory_entry& ent : std::filesystem::recursive_directory_iterator(real_dir_path)) {
+    for(const fs::directory_entry& ent : std::filesystem::recursive_directory_iterator(real_dir_path, err)) {
         const fs::file_status ent_sym_status(ent.symlink_status());
 
         if(fs::is_regular_file(ent_sym_status)) {
             size += fs::file_size(ent, err);
+
         } else if(fs::is_symlink(ent_sym_status) && sym) {
-            size += fs::directory_entry{fs::read_symlink(ent, err)}.file_size(err);
+            std::println(stderr, "{}", ent.path().string());
+            if(fs::is_regular_file(ent)) {
+                size += fs::directory_entry{fs::canonical(ent, err)}.file_size(err);
+
+            } else if(fs::is_directory(ent)) {
+                size += get_dir_size(fs::directory_entry{fs::canonical(ent, err), err}, opts);
+
+            } // else, ignore special files
         }
     }
 

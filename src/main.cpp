@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     std::string named_as{};
     bool op_provided{false}; // Whether a -p or -u option was provided
     bool path_provided{false};
-    packr::OP_TYPE operation;
+    packr::OP_TYPE operation{};
 
     while((cur_opt = getopt(argc, argv, "pushl:a:")) != -1) {
         switch(static_cast<char>(cur_opt)) {

@@ -122,7 +122,6 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         // TODO: Assignment of branching metadata should be done inside the separate called functions
 
         fs::file_status ent_sym_status{entry.symlink_status()};
-        fs::file_status ent_status{entry.status()};
 
         if(fs::is_directory(ent_sym_status)) {
             if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {

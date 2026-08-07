@@ -6,7 +6,6 @@
 #include <packr/misc_structs.hpp>
 #include <filesystem>
 #include <unistd.h>
-#include <print>
 
 namespace fs = std::filesystem;
 
@@ -54,8 +53,6 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
         std::string entry_relative_path{entry.path()};
         entry_relative_path.erase(0, base.path().string().size()); // getting relative path
         fs::directory_entry sample_copy{sample.path().string() + entry_relative_path};
-
-        bool res{sample_copy.exists()};
 
         if(!(sym && fs::is_symlink(entry))) { // Skip it for this iteration, since names would have been changed
             EXPECT_TRUE(sample_copy.exists());

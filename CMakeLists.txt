@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31.6)
-project(packr-v2 VERSION 0.1.0 LANGUAGES CXX)
+project(packr-v2)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,16 +13,56 @@ add_executable(packr
 )
 target_include_directories(packr PUBLIC ./include)
 target_link_libraries(packr PRIVATE -fsanitize=undefined)
-add_compile_options(-Wall
+target_compile_options(packr PRIVATE
+					-Wall
 					-Wextra
+					-Wpedantic
+					-Walloca
+					-Wcast-align
+					-Wcast-qual
+					-Wconversion
+					-Wsign-conversion
+					-Wdeprecated-copy-dtor
+					-Wdouble-promotion
+					-Wextra-semi
+					-Wformat=2
+					-Wimplicit-fallthrough
+					-Wmissing-braces
+					-Wnon-virtual-dtor
+					-Wnull-dereference
+					-Wold-style-cast
+					-Woverloaded-virtual
+					-Wpointer-arith
+					-Wrange-loop-construct
+					-Wshadow
+					-Wuninitialized
+					-Wvla
+					-Wwrite-strings
 					$<$<CONFIG:Release>:-O2>
 					$<$<CONFIG:Debug>:-Og>
 					$<$<CONFIG:Debug>:-g>
 					$<$<CONFIG:DEBUG>:-fsanitize=undefined>
-				)
+
+)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	add_compile_options(-fhardened)
+	target_compile_options(packr PRIVATE
+						-fhardened
+						-Wduplicated-branches
+						-Wduplicated-cond
+						-Wformat-overflow=2
+						-Wformat-signedness
+						-Wlogical-op
+						-Wrestrict
+						-Wstrict-null-sentinel
+						-Wsuggest-attribute=format
+						-Wsuggest-attribute=malloc
+						)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(packr PRIVATE
+						-Wcovered-switch-default
+						-Wextra-semi-stmt
+)
 endif()
 
 include(FetchContent)

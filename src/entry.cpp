@@ -180,7 +180,11 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
         return;
     }
 
-    if(follow_symlinks && file_obj.type() == file_type::symlink && !file_obj.secondary_path().empty()) {
+    const fs::path target_parent{file_path.parent_path()};
+    fs::path temp_secondary_path{file_obj.secondary_path().is_relative() ? target_parent / file_obj.secondary_path()
+                                                                         : file_obj.secondary_path()};
+
+    if(follow_symlinks && file_obj.type() == file_type::symlink && fs::exists(temp_secondary_path)) {
         symlink_target_exists = true;
     }
 
@@ -214,6 +218,11 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
     m_filename_length = actual_filename.length();
 
+    if(follow_symlinks) {
+        memcpy(m_secondary_path, file_obj.secondary_path().c_str(), file_obj.secondary_path().string().length());
+        m_secondary_path_length = file_obj.secondary_path().string().length();
+    }
+
     m_acc_time = {.sec = file_stat.st_atim.tv_sec, .nsec = file_stat.st_atim.tv_nsec};
     m_mod_time = {.sec = file_stat.st_mtim.tv_sec, .nsec = file_stat.st_mtim.tv_nsec};
     m_sc_time = {.sec = file_stat.st_ctim.tv_sec, .nsec = file_stat.st_ctim.tv_nsec};
@@ -227,11 +236,18 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 }
 
 static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file,
-                                     const u32 nest_count, const u8 opts) {
+                                     const u32 nest_count, const u8 opts, std::string_view alt_filename = "") {
     file_entry file_data{full_path, opts};
 
     if(!file_data.m_success) {
         return false;
+    }
+
+    if(alt_filename.length() > 0) {
+        memset(file_data.m_filename, '\0', file_data.m_filename_length);
+
+        memcpy(file_data.m_filename, alt_filename.data(), alt_filename.length());
+        file_data.m_filename_length = alt_filename.size();
     }
 
     special_marker file_marker = {.type = ENT_FILE};
@@ -309,20 +325,21 @@ static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_
     if(follow_symlinks && fs::is_regular_file(entry, err)) {
         assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
 
-        bool res{pack_handle_regular_file(target_path.string(), dir_header_copy, pack_file, nest_count, opts)};
+        [[maybe_unused]] bool res{pack_handle_regular_file(target_path.string(), dir_header_copy, pack_file, nest_count, opts,
+                                                           entry.path().filename().string())};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
 
     } else if(follow_symlinks && fs::is_directory(entry, err)) {
         assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
 
-        bool res{pack_handle_dir(dir_header_copy, entry, pack_file, opts, nest_count)};
+        [[maybe_unused]] bool res{pack_handle_dir(dir_header_copy, entry, pack_file, opts, nest_count)};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
 
     } else {
         // All other cases grouped here because:
         // 1) If follow_symlinks and it's not a regular file then simply adding its metadata would be enough
         // 2) If !follow_symlinks then it'd also be treated as a regular file
-        bool res{
+        [[maybe_unused]] bool res{
             pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, follow_symlinks ? (opts ^ O_SYM) : opts)};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
     }
@@ -351,7 +368,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
-        std::error_code err;
         const std::string full_path{curr_ent.path().string()};
 
         // std::println("current entry to pack: {}", full_path);
@@ -360,7 +376,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         // Returns false in case curr_ent is a symlink to a directory
         if(fs::is_directory(ent_sym_status)) {
-            bool res{pack_handle_dir(dir_header_copy, curr_ent, pack_file, opts, nest_count)};
+            [[maybe_unused]] bool res{pack_handle_dir(dir_header_copy, curr_ent, pack_file, opts, nest_count)};
             assert(res && "Handling a directory failed");
 
         } else if(fs::is_symlink(ent_sym_status)) {
@@ -368,7 +384,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         } else if(fs::is_regular_file(ent_sym_status)) {
             // std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file, const u32 nest_count, const u8 opts
-            bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts)};
+            [[maybe_unused]] bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts)};
             assert(res && "Handling a regular file failed");
         }
     }

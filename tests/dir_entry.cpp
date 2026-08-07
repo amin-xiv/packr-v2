@@ -40,8 +40,8 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     EXPECT_EQ(dirEntry.m_child_entry_count, 5);
     EXPECT_EQ(dirEntry.m_child_file_count, 4);
     EXPECT_EQ(dirEntry.m_child_dir_count, 1);
-    EXPECT_EQ(dirEntry.m_total_entry_count, 10);
-    EXPECT_EQ(dirEntry.m_total_file_count, 7);
+    EXPECT_EQ(dirEntry.m_total_entry_count, 12);
+    EXPECT_EQ(dirEntry.m_total_file_count, 9);
     EXPECT_EQ(dirEntry.m_total_dir_count, 3);
     EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.status().permissions());
     EXPECT_EQ(dirEntry.m_type, dir_type::regular);

@@ -10,7 +10,7 @@ namespace packr {
 class Directory {
   public:
     Directory() = delete;
-    Directory(std::filesystem::path dir_path);
+    Directory(const std::filesystem::path& dir_path);
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     [[nodiscard]] const dir_type& type() const noexcept;

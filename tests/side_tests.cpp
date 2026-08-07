@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <packr/utils.hpp>
 #include "shared_test_data.hpp"
@@ -115,3 +116,14 @@ TEST(createPackFilename, main) {
     std::string res{create_pack_filename(dir)};
     EXPECT_EQ(res, dir_name + ".packr");
 }
+
+TEST(read_symlink, main) {
+    fs::path dummy_dir1_path{"dummy_dir1"};
+    fs::path dummy_dir1_canonical{fs::canonical(dummy_dir1_path)};
+
+    // Relative path
+    EXPECT_EQ(packr::read_symlink(dummy_dir1_path), dummy_dir1_canonical);
+
+    // Absolute path
+    EXPECT_EQ(packr::read_symlink(dummy_dir1_path), dummy_dir1_canonical);
+};

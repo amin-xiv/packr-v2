@@ -48,7 +48,7 @@ TEST(File, ConstructorRegular) {
     EXPECT_TRUE(fs::exists(file_obj.entry_obj(), err));
     EXPECT_TRUE(fs::exists(file_obj.path_obj(), err));
     EXPECT_EQ(file_obj.type(), file_type::regular);
-    EXPECT_STREQ(file_obj.secondary_path().c_str(), packr::read_symlink(file_path).c_str());
+    EXPECT_STREQ(file_obj.path_obj().c_str(), fs::absolute(file_path).c_str());
 }
 
 TEST(File, ConstructorSymlink) {
@@ -63,5 +63,5 @@ TEST(File, ConstructorSymlink) {
     EXPECT_TRUE(fs::exists(file_obj.entry_obj(), err));
     EXPECT_TRUE(fs::exists(file_obj.path_obj(), err));
     EXPECT_EQ(file_obj.type(), file_type::symlink);
-    EXPECT_STREQ(file_obj.secondary_path().c_str(), packr::read_symlink(file_path).c_str());
+    EXPECT_STREQ(file_obj.secondary_path().c_str(), fs::read_symlink(file_path).c_str());
 }

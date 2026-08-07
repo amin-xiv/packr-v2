@@ -8,7 +8,7 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
-Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m_dir_path) {
+Directory::Directory(const fs::path& path) : m_dir_path(fs::absolute(path)), m_directory(m_dir_path) {
     std::error_code err{};                                    // Just to avoid exceptions throw by fs::is_directory
     fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
 
@@ -20,8 +20,6 @@ Directory::Directory(fs::path path) : m_dir_path(std::move(path)), m_directory(m
         // First condition to check if the entry is a symlink, and the second to check if it was an actual directory
         m_is_valid = true;
         m_type = dir_type::symlink;
-
-        // REVISE
         m_secondary_path = packr::read_symlink(m_dir_path);
 
     } else if(fs::is_directory(sym_status)) {
@@ -54,7 +52,7 @@ Directory::operator bool() const noexcept {
     return m_is_valid;
 }
 
-File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_file(m_file_path) {
+File::File(const std::filesystem::path& file_path) : m_file_path(fs::absolute(file_path)), m_file(m_file_path) {
     std::error_code err{};                                  //  To avoid exceptions
     fs::file_status sym_status{m_file.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
 
@@ -65,10 +63,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(file_path), m_f
     } else if(fs::is_symlink(sym_status)) {
         m_is_valid = true;
         m_type = file_type::symlink;
-
-        // NOTE: REVISE, both the functionality and exception safety
-        // NOTE: tests
-        m_secondary_path = packr::read_symlink(m_file_path);
+        m_secondary_path = fs::read_symlink(m_file_path);
 
     } else if(fs::is_regular_file(sym_status)) {
         m_is_valid = true;

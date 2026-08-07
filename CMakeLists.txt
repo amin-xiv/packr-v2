@@ -11,8 +11,7 @@ add_executable(packr
 	./src/utils.cpp
 	./src/fs_node.cpp
 )
-target_include_directories(packr PUBLIC ./include)
-target_link_libraries(packr PRIVATE -fsanitize=undefined)
+include_directories(./include)
 target_compile_options(packr PRIVATE
 					-Wall
 					-Wextra
@@ -41,8 +40,10 @@ target_compile_options(packr PRIVATE
 					$<$<CONFIG:Release>:-O2>
 					$<$<CONFIG:Debug>:-Og>
 					$<$<CONFIG:Debug>:-g>
-					$<$<CONFIG:DEBUG>:-fsanitize=undefined>
-
+					$<$<CONFIG:Debug>:-fsanitize=undefined,address>
+)
+target_link_options(packr PRIVATE
+				-fsanitize=address,undefined
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -69,7 +70,7 @@ include(FetchContent)
 FetchContent_Declare(
 	googletest
 			GIT_REPOSITORY https://github.com/google/googletest.git
-			GIT_TAG v1.15.2
+			GIT_TAG v1.17.0
 )
 FetchContent_MakeAvailable(googletest)
 

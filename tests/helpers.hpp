@@ -5,9 +5,11 @@
 #include <packr/utils.hpp>
 #include <packr/misc_structs.hpp>
 #include <filesystem>
+#include <string>
 #include <unistd.h>
 
 namespace fs = std::filesystem;
+using namespace packr;
 
 void compare_time_specs(const timespec& lhs, const packr::time_spec& rhs) {
     EXPECT_EQ(lhs.tv_sec, rhs.sec);
@@ -53,18 +55,45 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
         std::string entry_relative_path{entry.path()};
         entry_relative_path.erase(0, base.path().string().size()); // getting relative path
         fs::directory_entry sample_copy{sample.path().string() + entry_relative_path};
+        fs::file_status entry_sym_stat{entry.symlink_status()};
 
-        if(!(sym && fs::is_symlink(entry))) { // Skip it for this iteration, since names would have been changed
-            EXPECT_TRUE(sample_copy.exists());
+        ASSERT_TRUE(sample_copy.exists());
+        if(fs::is_regular_file(entry_sym_stat)) {
+            ASSERT_TRUE(fs::is_regular_file(sample_copy));
+            ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+
+        } else if(fs::is_directory(entry_sym_stat)) {
+            ASSERT_TRUE(fs::is_directory(sample_copy));
+            ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
+        } else if(fs::is_symlink(entry_sym_stat)) {
+            fs::path entry_canonical{packr::read_symlink(entry)};
+            bool is_special{!(fs::is_directory(entry_canonical) || fs::is_regular_file(entry_canonical))};
+
+            // Just tests existence and sizes of both files, if they're broken symlinks or special files
+            if(entry_canonical.empty() || is_special) {
+                // TODO: Must test that it's also a symlink
+                // ASSERT_TRUE(fs::is_symlink(sample_copy));
+                // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                continue;
+            }
+
+            if(fs::is_directory(entry_canonical)) {
+                if(sym) {
+                    ASSERT_TRUE(fs::is_directory(sample_copy));
+                    ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
+                } else {
+                    // ASSERT_TRUE(fs::is_symlink(sample_copy));
+                    // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                }
+            } else if(fs::is_regular_file(entry)) {
+                if(sym) {
+                    ASSERT_TRUE(fs::is_regular_file(sample_copy));
+                    ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                } else {
+                    // ASSERT_TRUE(fs::is_symlink(sample_copy));
+                    // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                }
+            }
         }
-
-        // NOTE: This will be reused once symlinks are recreated on unpack
-        // if(fs::is_regular_file(sample_copy)) {
-        //     ASSERT_TRUE(fs::is_regular_file(entry)); // it must correspond
-        //     ASSERT_EQ(entry.file_size(), sample_copy.file_size());
-        //
-        // } else if(fs::is_directory(sample_copy)) {
-        //     ASSERT_TRUE(fs::is_directory(entry));
-        // }
     }
 }

@@ -3,6 +3,7 @@
 #include <packr/fs_node.hpp>
 #include <system_error>
 #include <filesystem>
+#include <cassert>
 
 namespace fs = std::filesystem;
 
@@ -152,6 +153,67 @@ bool File_W::write(const char* buffer, std::streamsize count) {
 
     m_stream.write(buffer, count);
     return true;
+}
+
+File_sym::File_sym(const fs::path& file_path) {
+    std::error_code err;
+
+    const fs::file_status file_sym_stat{fs::symlink_status(file_path, err)};
+    const bool symlink_exists{fs::exists(file_sym_stat)};
+    assert(symlink_exists);
+    assert(fs::is_symlink(file_sym_stat));
+
+    // As assertions won't run in release mode
+    if(!symlink_exists) {
+        m_error_message = "Symlink doesn't exist";
+        m_is_valid = false;
+        return;
+    }
+
+    m_symlink_path = file_path.is_absolute() ? file_path : fs::absolute(file_path, err);
+    m_symlink_ent = fs::directory_entry{m_symlink_path, err};
+    m_target_path = fs::canonical(m_symlink_path, err);
+
+    if(fs::exists(m_symlink_path, err)) { // This will check whether the symlink target exists or not
+        if(fs::is_directory(m_symlink_path, err)) {
+            m_target_type = entry_type::directory;
+        } else if(fs::is_regular_file(m_symlink_path, err)) {
+            m_target_type = entry_type::regular_file;
+        } else {
+            m_target_type = entry_type::special;
+        }
+    }
+
+    m_is_valid = true;
+}
+
+const fs::directory_entry& File_sym::entry_obj() const noexcept {
+    return m_symlink_ent;
+}
+
+const fs::path& File_sym::path_obj() const noexcept {
+    return m_symlink_path;
+}
+
+const entry_type& File_sym::target_type() const noexcept {
+    return m_target_type;
+}
+
+const fs::path& File_sym::target_path() const noexcept {
+    return m_target_path;
+}
+
+bool File_sym::has_target() const noexcept {
+    return !m_target_path.empty();
+}
+
+File_sym::operator bool() const noexcept {
+    return m_is_valid;
+}
+
+void File_sym::refresh() noexcept {
+    std::error_code err;
+    m_symlink_ent.refresh(err);
 }
 
 } // namespace packr

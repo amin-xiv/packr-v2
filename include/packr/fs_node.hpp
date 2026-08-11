@@ -71,4 +71,27 @@ class File_W : public File {
     std::ofstream m_stream;
 };
 
+// Used to represent symbolic links(NOT their targets)
+class File_sym {
+  public:
+    File_sym() = delete;
+    File_sym(const std::filesystem::path& file_path);
+
+    [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
+    [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
+    [[nodiscard]] const entry_type& target_type() const noexcept;
+    [[nodiscard]] const std::filesystem::path& target_path() const noexcept;
+    [[nodiscard]] bool has_target() const noexcept;
+    operator bool() const noexcept;
+    void refresh() noexcept;
+
+  private:
+    std::filesystem::path m_symlink_path;
+    std::filesystem::directory_entry m_symlink_ent;
+    entry_type m_target_type;
+    std::filesystem::path m_target_path;
+    bool m_is_valid{};
+    std::string m_error_message;
+};
+
 } // namespace packr

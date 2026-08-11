@@ -41,6 +41,12 @@ enum class dir_type : u8 {
     symlink
 };
 
+enum class entry_type : u8 {
+    directory,
+    regular_file,
+    special
+};
+
 enum class entry_class_t : u8 {
     CHILD_ENT,
     NESTED_ENT

@@ -9,8 +9,6 @@
 #include <print>
 
 // BUG: Recreate symlinks as symlinks on unpack(currently not working (entry.cpp))
-// Apprently now, there is now way to differentiate in the constructor of file_entry for File constructor to assign different
-// types for symlinks and regular files in case of their target existing
 // TODO: Cleanup all compiler warnings
 // TODO: Reduce distractions within tests
 

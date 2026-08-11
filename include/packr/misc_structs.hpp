@@ -13,4 +13,4 @@ struct time_spec {
     i64 nsec;
 };
 
-}; // namespace packr
+} // namespace packr

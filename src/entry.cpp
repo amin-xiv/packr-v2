@@ -413,6 +413,7 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
 
 bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {
     // Flag to keep looping
+    std::error_code err;
     bool read_pack_file{true};
 
     while(read_pack_file) {
@@ -432,13 +433,12 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
 
         case ENT_FILE:
             {
-                /* On its own block to prevent pollution the case() namespace */
                 file_entry curr_file_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_file_data), sizeof(file_entry))) {
                     return false;
                 }
 
-                const char* unnamed_filename = "unamed-file"; // Just in case the file had no name for some reason
+                static const char* unnamed_filename = "unamed-file"; // Just in case the file had no name for some reason
                 if(curr_file_data.m_filename_length < 1) {
                     // Copying it into curr_file_data.filename so a flag isn't needed
                     memcpy(curr_file_data.m_filename, unnamed_filename, strlen(unnamed_filename));
@@ -447,6 +447,19 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 File_W target_file{curr_file_data.m_filename};
                 if(!target_file.setup_stream(open_type::fresh)) {
                     return false;
+                }
+
+                if(curr_file_data.m_type == file_type::symlink) {
+                    assert(curr_file_data.m_filename_length > 0);
+
+                    fs::directory_entry curr_file_fs{curr_file_data.m_filename};
+                    // TEST: case
+                    fs::create_symlink(curr_file_data.m_secondary_path_length > 0 ? curr_file_data.m_secondary_path : "",
+                                       curr_file_fs, err);
+                    curr_file_fs.refresh();
+                    assert(fs::exists(curr_file_fs.symlink_status()));
+
+                    continue;
                 }
 
                 if(curr_file_data.m_size > 0) {
@@ -466,13 +479,12 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
 
         case ENT_DIR_START:
             {
-                /* On its own block to prevent pollution the case() namespace */
                 dir_entry curr_dir_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_dir_data), sizeof(dir_entry))) {
                     return false;
                 }
 
-                const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
+                static const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
                 if(curr_dir_data.m_dirname_length < 1) {
                     // Copying it into curr_dir_data.dirname so a flag isn't needed
                     memcpy(curr_dir_data.m_dirname, unnamed_dirname, strlen(unnamed_dirname));

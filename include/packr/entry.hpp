@@ -4,7 +4,7 @@
 #include <packr/fs_node.hpp>
 #include <packr/misc_structs.hpp>
 #include <filesystem>
-#include <climits>
+#include <sys/param.h> // *_MAX macros
 
 namespace packr {
 

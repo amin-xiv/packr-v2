@@ -5,6 +5,7 @@
 #include <packr/utils.hpp>
 #include <packr/misc_structs.hpp>
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 #include <unistd.h>
 
@@ -42,6 +43,7 @@ void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rh
 }
 
 void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::directory_entry& sample, const packr::u8 opts) {
+    std::error_code err;
     const bool sym{(opts & packr::O_SYM) > 0};
 
     // verify both exist
@@ -55,9 +57,9 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
         std::string entry_relative_path{entry.path()};
         entry_relative_path.erase(0, base.path().string().size()); // getting relative path
         fs::directory_entry sample_copy{sample.path().string() + entry_relative_path};
-        fs::file_status entry_sym_stat{entry.symlink_status()};
+        fs::file_status entry_sym_stat{entry.symlink_status(err)};
 
-        ASSERT_TRUE(fs::exists(sample_copy.symlink_status())) << sample_copy.path().c_str();
+        ASSERT_TRUE(fs::exists(sample_copy.symlink_status()));
         if(fs::is_regular_file(entry_sym_stat)) {
             ASSERT_TRUE(fs::is_regular_file(sample_copy));
             ASSERT_EQ(entry.file_size(), sample_copy.file_size());
@@ -67,13 +69,9 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
             ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
         } else if(fs::is_symlink(entry_sym_stat)) {
             fs::path entry_canonical{packr::read_symlink(entry)};
-            bool is_special{!(fs::is_directory(entry_canonical) || fs::is_regular_file(entry_canonical))};
 
-            // Just tests existence and sizes of both files, if they're broken symlinks or special files
-            if(entry_canonical.empty() || is_special) {
-                // TODO: Must test that it's also a symlink
-                // ASSERT_TRUE(fs::is_symlink(sample_copy));
-                // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+            if(entry_canonical.empty()) {
+                ASSERT_TRUE(fs::is_symlink(sample_copy));
                 continue;
             }
 
@@ -81,18 +79,21 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
                 if(sym) {
                     ASSERT_TRUE(fs::is_directory(sample_copy));
                     ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
+
                 } else {
-                    // ASSERT_TRUE(fs::is_symlink(sample_copy));
-                    // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                    ASSERT_TRUE(fs::is_symlink(sample_copy));
                 }
+
             } else if(fs::is_regular_file(entry)) {
                 if(sym) {
                     ASSERT_TRUE(fs::is_regular_file(sample_copy));
                     ASSERT_EQ(entry.file_size(), sample_copy.file_size());
                 } else {
-                    // ASSERT_TRUE(fs::is_symlink(sample_copy));
-                    // ASSERT_EQ(entry.file_size(), sample_copy.file_size());
+                    ASSERT_TRUE(fs::is_symlink(sample_copy));
                 }
+            } else {
+                std::string err_msg{"Potentially found a special file: " + entry.path().string()};
+                throw std::runtime_error(err_msg);
             }
         }
     }

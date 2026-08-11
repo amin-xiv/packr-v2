@@ -49,8 +49,10 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
 }
 
 static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, bool add_size = true) {
+    std::error_code err;
+
     if(add_size) {
-        dir.m_size += entry.file_size();
+        dir.m_size += entry.file_size(err);
     }
     dir.m_total_entry_count++;
     dir.m_total_file_count++;
@@ -66,7 +68,9 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts) {
     // No need to care whether this object is a symlink itself or not since it would be handled externally
 
-    if(!fs::exists(dir.symlink_status()) || !fs::is_directory(dir)) {
+    std::error_code err;
+
+    if(!fs::exists(dir.symlink_status(err)) || !fs::is_directory(dir)) {
         m_success = false;
         return;
     }
@@ -110,9 +114,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
     m_mode = std::to_underlying((follow_symlinks && symlink_target_exists) || nest_count == 0
                                     ? (main_dir_obj.entry_obj().status().permissions())
-                                    : (main_dir_obj.entry_obj().symlink_status().permissions()));
+                                    : (main_dir_obj.entry_obj().symlink_status(err).permissions()));
 
-    for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
+    for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
         std::error_code err;
         std::string full_path{entry.path().string()};
 
@@ -121,7 +125,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         // TODO: Empty directory fails??
         // TODO: Assignment of branching metadata should be done inside the separate called functions
 
-        fs::file_status ent_sym_status{entry.symlink_status()};
+        fs::file_status ent_sym_status{entry.symlink_status(err)};
 
         if(fs::is_directory(ent_sym_status)) {
             if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
@@ -139,7 +143,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             fs::path secondary_path{packr::read_symlink(entry.path())};
 
             fs::directory_entry secondary_entry{secondary_path, err};
-            if(secondary_path.empty() || !fs::exists(secondary_entry.symlink_status())) {
+            if(secondary_path.empty() || !fs::exists(secondary_entry.symlink_status(err))) {
                 std::println(stderr, "WARNING: Couldn't read symlink target path: {}", secondary_path.string());
                 std::println(stderr, "    -> symlinked by: {}", full_path);
                 inc_dir_ent_file_count(*this, entry, nest_count, false);
@@ -230,7 +234,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
     m_mode =
         std::to_underlying((follow_symlinks && symlink_target_exists) ? (file_obj.entry_obj().status().permissions())
-                                                                      : (file_obj.entry_obj().symlink_status().permissions()));
+                                                                      : (file_obj.entry_obj().symlink_status(err).permissions()));
     m_success = true;
 }
 
@@ -419,7 +423,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }
     }
 
-    for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir)) {
+    for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};
 
         // std::println("current entry to pack: {}", full_path);
@@ -508,7 +512,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     std::println(stderr, "{}, {}", err.message(), err.value());
                     curr_file_fs.refresh();
                     std::println(stderr, "{}", curr_file_data.m_filename);
-                    assert(fs::exists(curr_file_fs.symlink_status()));
+                    assert(fs::exists(curr_file_fs.symlink_status(err)));
 
                     continue;
                 }

@@ -63,11 +63,11 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
         return -1;
     }
 
-    fs::path real_dir_path{fs::is_symlink(dir, err) ? fs::canonical(dir)
+    fs::path real_dir_path{fs::is_symlink(dir, err) ? fs::canonical(dir, err)
                                                     : dir.path()}; // In case the provided path refers to a sym_link
 
     for(const fs::directory_entry& ent : std::filesystem::recursive_directory_iterator(real_dir_path, err)) {
-        const fs::file_status ent_sym_status(ent.symlink_status());
+        const fs::file_status ent_sym_status(ent.symlink_status(err));
 
         if(fs::is_regular_file(ent_sym_status)) {
             size += fs::file_size(ent, err);
@@ -99,9 +99,13 @@ void print_dir_data(const dir_entry& dir_data) noexcept {
     std::println("child_file_count: {}", static_cast<packr::u64>(dir_data.m_child_file_count));
     std::println("child_entry_count: {}", static_cast<packr::u64>(dir_data.m_child_entry_count));
 
-    std::println("last access time: sec: {}, nsec: {}", dir_data.m_acc_time.sec, dir_data.m_acc_time.nsec);
-    std::println("last modification time: sec: {}, nsec: {}", dir_data.m_mod_time.sec, dir_data.m_mod_time.nsec);
-    std::println("last last status change time: sec: {}, nsec: {}", dir_data.m_sc_time.sec, dir_data.m_sc_time.nsec);
+    // Need to be explicitly casted due to struct dir_entry being packed(due to misalignment)
+    std::println("last access time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_acc_time.sec),
+                 static_cast<packr::i64>(dir_data.m_acc_time.nsec));
+    std::println("last modification time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_mod_time.sec),
+                 static_cast<packr::i64>(dir_data.m_mod_time.nsec));
+    std::println("last last status change time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_sc_time.sec),
+                 static_cast<packr::i64>(dir_data.m_sc_time.nsec));
     std::println("mode: {}", static_cast<packr::u64>(dir_data.m_mode));
 }
 
@@ -132,12 +136,12 @@ std::string create_pack_filename(const dir_entry& dir_data) {
 }
 
 fs::path read_symlink(const fs::path& path) {
-    assert(!path.empty() && "Tried to read a symlink of an empty path");
-    assert(fs::exists({fs::directory_entry{path}.symlink_status()}) && "Tried to read a symlink of a nonexistent entry");
-
     std::error_code err{};
+    assert(!path.empty() && "Tried to read a symlink of an empty path");
+    assert(fs::exists({fs::directory_entry{path}.symlink_status(err)}) && "Tried to read a symlink of a nonexistent entry");
 
     const fs::path secondary_path{fs::canonical(path, err)};
+    // TODO: canonical CAN'T refer to a non-existent file
     const fs::directory_entry secondary_ent{secondary_path, err};
     fs::path res{}; // what's going to be returned
 

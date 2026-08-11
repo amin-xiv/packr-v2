@@ -10,8 +10,8 @@ namespace fs = std::filesystem;
 namespace packr {
 
 Directory::Directory(const fs::path& path) : m_dir_path(fs::absolute(path)), m_directory(m_dir_path) {
-    std::error_code err{};                                    // Just to avoid exceptions throw by fs::is_directory
-    fs::file_status sym_status{m_directory.symlink_status()}; // symlink_status to NOT follow symlinks to their targets
+    std::error_code err{};                                       // Just to avoid exceptions throw by fs::is_directory
+    fs::file_status sym_status{m_directory.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
 
     if(!fs::exists(sym_status)) {
         m_is_valid = false;
@@ -55,6 +55,9 @@ Directory::operator bool() const noexcept {
 
 File::File(const std::filesystem::path& file_path, const bool symlinks_as_symlinks)
     : m_file_path(fs::absolute(file_path)), m_file(m_file_path) {
+    // symlinks_as_symlinks flag is used to denote that when packing the target of a symlink
+    // which is a regular file, to not set is types as file_type::symlink and rather file_type::regular
+
     std::error_code err{};                                  //  To avoid exceptions
     fs::file_status sym_status{m_file.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
 
@@ -105,7 +108,7 @@ void File::refresh() noexcept {
 }
 
 bool File_R::setup_stream(const open_type type) {
-    // dummy error_code
+    std::error_code err;
 
     if(type == open_type::fresh) {
         m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
@@ -114,7 +117,7 @@ bool File_R::setup_stream(const open_type type) {
     }
 
     // Check if the file exists
-    if(!fs::exists(this->entry_obj().symlink_status())) {
+    if(!fs::exists(this->entry_obj().symlink_status(err))) {
         return false;
     }
 
@@ -132,6 +135,8 @@ bool File_R::read(char* buffer, std::streamsize count) {
 }
 
 bool File_W::setup_stream(const open_type type) {
+    std::error_code err;
+
     if(type == open_type::fresh) {
         m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
         this->refresh();
@@ -139,7 +144,7 @@ bool File_W::setup_stream(const open_type type) {
     }
 
     // Check if the file exists
-    if(!fs::exists(this->entry_obj().symlink_status())) {
+    if(!fs::exists(this->entry_obj().symlink_status(err))) {
         return false;
     }
 

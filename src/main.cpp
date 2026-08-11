@@ -8,7 +8,6 @@
 #include <string>
 #include <print>
 
-// BUG: Recreate symlinks as symlinks on unpack(currently not working (entry.cpp))
 // TODO: Cleanup all compiler warnings
 // TODO: Reduce distractions within tests
 
@@ -124,6 +123,8 @@ int main(int argc, char** argv) {
             std::println(stderr, "pack(): {}", strerror(errno));
             return 1;
         }
+
+        std::println("pack success");
 
     } else {
         packr::File_R pack_file{fs::directory_entry(src_path)};

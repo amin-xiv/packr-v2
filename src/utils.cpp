@@ -2,12 +2,16 @@
 #include <filesystem>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
-#include <print>
 #include <cassert>
+#include <string_view>
 #include <unistd.h>
 #include <cstring>
 #include <optional>
 #include <string>
+
+#ifndef NDEBUG
+#include <print>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -84,26 +88,27 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
 }
 
 void print_dir_data(const dir_entry& dir_data) noexcept {
-    std::println("dir name: {}", static_cast<const char*>(dir_data.m_dirname));
-    std::println("dir name length: {}", static_cast<packr::u16>(dir_data.m_dirname_length));
-    std::println("dir size is: {}", static_cast<packr::u64>(dir_data.m_size));
+    // Integers are casted to their types since the struct dir_entry is packed
 
-    std::println("total_dir_count: {}", static_cast<packr::u64>(dir_data.m_total_dir_count));
-    std::println("total_file_count: {}", static_cast<packr::u64>(dir_data.m_total_file_count));
-    std::println("total_entry_count: {}", static_cast<packr::u64>(dir_data.m_total_entry_count));
+    debug_log("dir name: " + std::string{static_cast<const char*>(dir_data.m_dirname)});
+    debug_log("dir name length: " + std::to_string(static_cast<packr::u16>(dir_data.m_dirname_length)));
+    debug_log("dir size is: " + std::to_string(static_cast<packr::u64>(dir_data.m_size)));
 
-    std::println("child_dir_count: {}", static_cast<packr::u64>(dir_data.m_child_dir_count));
-    std::println("child_file_count: {}", static_cast<packr::u64>(dir_data.m_child_file_count));
-    std::println("child_entry_count: {}", static_cast<packr::u64>(dir_data.m_child_entry_count));
+    debug_log("total_dir_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_dir_count)));
+    debug_log("total_file_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_file_count)));
+    debug_log("total_entry_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_entry_count)));
 
-    // Need to be explicitly casted due to struct dir_entry being packed(due to misalignment)
-    std::println("last access time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_acc_time.sec),
-                 static_cast<packr::i64>(dir_data.m_acc_time.nsec));
-    std::println("last modification time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_mod_time.sec),
-                 static_cast<packr::i64>(dir_data.m_mod_time.nsec));
-    std::println("last last status change time: sec: {}, nsec: {}", static_cast<packr::i64>(dir_data.m_sc_time.sec),
-                 static_cast<packr::i64>(dir_data.m_sc_time.nsec));
-    std::println("mode: {}", static_cast<packr::u64>(dir_data.m_mode));
+    debug_log("child_dir_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_dir_count)));
+    debug_log("child_file_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_file_count)));
+    debug_log("child_entry_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_entry_count)));
+
+    debug_log("last access time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.sec)) +
+              std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.nsec)));
+    debug_log("last modification time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.sec)) +
+              std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.nsec)));
+    debug_log("last last status change time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.sec)) +
+              std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.nsec)));
+    debug_log("mode: " + std::to_string(static_cast<packr::u64>(dir_data.m_mode)));
 }
 
 bool curate_src_path(std::string& src_path) noexcept {
@@ -124,7 +129,7 @@ bool curate_src_path(std::string& src_path) noexcept {
 
 std::string create_pack_filename(const dir_entry& dir_data) {
     static constexpr std::string extension{".packr"};
-    std::string pack_filename{};
+    std::string pack_filename;
     pack_filename.reserve(extension.length() + strlen(dir_data.m_dirname));
 
     pack_filename += dir_data.m_dirname;
@@ -133,20 +138,26 @@ std::string create_pack_filename(const dir_entry& dir_data) {
 }
 
 fs::path read_symlink(const fs::path& path) {
-    std::error_code err{};
+    std::error_code err;
     assert(!path.empty() && "Tried to read a symlink of an empty path");
     assert(fs::exists({fs::directory_entry{path}.symlink_status(err)}) && "Tried to read a symlink of a nonexistent entry");
 
     const fs::path secondary_path{fs::canonical(path, err)};
     // TODO: canonical CAN'T refer to a non-existent file
     const fs::directory_entry secondary_ent{secondary_path, err};
-    fs::path res{}; // what's going to be returned
+    fs::path res; // what's going to be returned
 
     if(!secondary_path.empty()) {
         res = fs::exists(secondary_ent.symlink_status(err)) ? secondary_path : "";
     }
 
     return res;
+}
+
+void debug_log([[maybe_unused]] std::string_view str) {
+#ifndef NDEBUG
+    std::println(stderr, "{}", str);
+#endif
 }
 
 } // namespace packr

@@ -4,6 +4,7 @@
 #include <packr/types.hpp>
 #include <filesystem>
 #include <optional>
+#include <string_view>
 
 namespace packr {
 
@@ -23,4 +24,7 @@ void print_dir_data(const dir_entry& dir_data) noexcept;
 std::string create_pack_filename(const dir_entry& dir_data);
 
 std::filesystem::path read_symlink(const std::filesystem::path& path);
+
+void debug_log(std::string_view str);
+
 } // namespace packr

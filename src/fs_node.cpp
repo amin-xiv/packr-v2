@@ -28,7 +28,6 @@ Directory::Directory(const fs::path& path) : m_dir_path(fs::absolute(path)), m_d
         m_type = dir_type::regular;
     } else {
         m_is_valid = false;
-        // std::println("\n PATH: {}\n", m_dir_path.string());
         m_error_message = "Unknown directory type!";
     }
 }

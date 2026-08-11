@@ -8,8 +8,8 @@
 #include <cassert>
 #include <string>
 #include <sys/stat.h>
-#include <cstring>
 #include <print>
+#include <cstring>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -118,25 +118,19 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
         std::string full_path{entry.path().string()};
 
-        // std::println("current entry: {}", full_path);
-
-        // TODO: Empty directory fails??
-        // TODO: Assignment of branching metadata should be done inside the separate called functions
+        packr::debug_log("current entry: " + full_path);
 
         fs::file_status ent_sym_status{entry.symlink_status(err)};
 
         if(fs::is_directory(ent_sym_status)) {
             if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
-                std::println(stderr, "ERROR COLLECTING DIRECTORY DATA: {}", full_path);
+                packr::debug_log("ERROR COLLECTING DIRECTORY DATA: " + full_path);
             }
 
         } else if(fs::is_regular_file(ent_sym_status)) {
             inc_dir_ent_file_count(*this, entry, nest_count);
 
         } else if(fs::is_symlink(ent_sym_status)) {
-            // debug
-            // std::println("\n\n\nSYMLINK!!!!\n\n");
-
             // NOTE: Check functionality
             fs::path secondary_path{packr::read_symlink(entry.path())};
 
@@ -156,14 +150,14 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                     inc_dir_ent_file_count(*this, secondary_entry, nest_count);
                 } else if(fs::is_directory(secondary_entry)) {
                     if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
-                        std::println(stderr, "ERROR COLLECTING (symlinked)DIRECTORY DATA: {}", secondary_path.string());
-                        std::println(stderr, "    -> symlinked by: {}", full_path);
+                        packr::debug_log("ERROR COLLECTING (symlinked)DIRECTORY DATA: " + secondary_path.string());
+                        packr::debug_log("    -> symlinked by: " + full_path);
                     }
                 }
             }
 
         } else {
-            std::println(stderr, "Ignoring a special file: {}", entry.path().string());
+            std::println(stderr, "Ignoring a special file: ", entry.path().string());
         }
     }
 
@@ -424,7 +418,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};
 
-        // std::println("current entry to pack: {}", full_path);
+        packr::debug_log("current entry to pack: " + full_path);
 
         const fs::file_status ent_sym_status{curr_ent.symlink_status(err)};
 
@@ -441,7 +435,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             [[maybe_unused]] bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts)};
             assert(res && "Handling a regular file failed");
         } else {
-            std::println("[WARNING] skipping a special file: {}", curr_ent.path().c_str());
+            std::println(stderr, "WARNING skipping a special file: {}", curr_ent.path().string());
         }
     }
 
@@ -507,9 +501,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     // TEST: case
                     fs::create_symlink(curr_file_data.m_secondary_path_length > 0 ? curr_file_data.m_secondary_path : "",
                                        curr_file_fs, err);
-                    std::println(stderr, "{}, {}", err.message(), err.value());
                     curr_file_fs.refresh();
-                    std::println(stderr, "{}", curr_file_data.m_filename);
                     assert(fs::exists(curr_file_fs.symlink_status(err)));
 
                     continue;

@@ -8,12 +8,6 @@
 #include <string>
 #include <print>
 
-// TODO: Reduce distractions within tests
-
-// TODO: Debug print
-// TODO: Find a way to test the time stuff
-// TODO: compare_dir_trees doesn't compare timestamps
-
 namespace fs = std::filesystem;
 
 static void print_help();
@@ -108,7 +102,7 @@ int main(int argc, char** argv) {
         print_dir_data(dir_data);
 
         std::string pack_filename{packr::create_pack_filename(dir_data)};
-        std::println("pack filename: {}", pack_filename);
+        packr::debug_log("pack filename: " + pack_filename);
 
         packr::File_W pack_file_stream{fs::directory_entry(pack_filename)};
 

@@ -37,12 +37,14 @@ add_executable(side_tests
 	../src/utils.cpp
 )
 
-target_link_libraries(packing_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_link_libraries(unpacking_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_link_libraries(dir_entry PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_link_libraries(file_entry PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_link_libraries(fs_node PRIVATE GTest::gtest_main -fsanitize=undefined)
-target_link_libraries(side_tests PRIVATE GTest::gtest_main -fsanitize=undefined)
+add_compile_options(-fsanitize=undefined,address)
+
+target_link_libraries(packing_tests PRIVATE GTest::gtest_main -fsanitize=undefined,address)
+target_link_libraries(unpacking_tests PRIVATE GTest::gtest_main -fsanitize=undefined,address)
+target_link_libraries(dir_entry PRIVATE GTest::gtest_main -fsanitize=undefined,address)
+target_link_libraries(file_entry PRIVATE GTest::gtest_main -fsanitize=undefined,address)
+target_link_libraries(fs_node PRIVATE GTest::gtest_main -fsanitize=undefined,address)
+target_link_libraries(side_tests PRIVATE GTest::gtest_main -fsanitize=undefined,address)
 
 target_include_directories(packing_tests PRIVATE ../include)
 target_include_directories(unpacking_tests PRIVATE ../include)

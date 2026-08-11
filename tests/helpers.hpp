@@ -57,7 +57,7 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
         fs::directory_entry sample_copy{sample.path().string() + entry_relative_path};
         fs::file_status entry_sym_stat{entry.symlink_status()};
 
-        ASSERT_TRUE(sample_copy.exists());
+        ASSERT_TRUE(fs::exists(sample_copy.symlink_status())) << sample_copy.path().c_str();
         if(fs::is_regular_file(entry_sym_stat)) {
             ASSERT_TRUE(fs::is_regular_file(sample_copy));
             ASSERT_EQ(entry.file_size(), sample_copy.file_size());

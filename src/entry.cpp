@@ -173,6 +173,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
     const bool follow_symlinks{(opts & O_SYM) > 0};
     bool symlink_target_exists{};
+
     File file_obj{file_path};
 
     if(!file_obj) {
@@ -184,7 +185,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     fs::path temp_secondary_path{file_obj.secondary_path().is_relative() ? target_parent / file_obj.secondary_path()
                                                                          : file_obj.secondary_path()};
 
-    if(follow_symlinks && file_obj.type() == file_type::symlink && fs::exists(temp_secondary_path)) {
+    if(follow_symlinks && file_obj.type() == file_type::symlink && fs::exists(temp_secondary_path, err)) {
         symlink_target_exists = true;
     }
 
@@ -218,10 +219,8 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
     m_filename_length = actual_filename.length();
 
-    if(follow_symlinks) {
-        memcpy(m_secondary_path, file_obj.secondary_path().c_str(), file_obj.secondary_path().string().length());
-        m_secondary_path_length = file_obj.secondary_path().string().length();
-    }
+    memcpy(m_secondary_path, file_obj.secondary_path().c_str(), file_obj.secondary_path().string().length());
+    m_secondary_path_length = file_obj.secondary_path().string().length();
 
     m_acc_time = {.sec = file_stat.st_atim.tv_sec, .nsec = file_stat.st_atim.tv_nsec};
     m_mod_time = {.sec = file_stat.st_mtim.tv_sec, .nsec = file_stat.st_mtim.tv_nsec};
@@ -237,6 +236,9 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
 static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file,
                                      const u32 nest_count, const u8 opts, std::string_view alt_filename = "") {
+    // alt_filename is used to name a followed symlink as the name of the symlink rather than target's symlink
+    // to preserve dir structure
+
     file_entry file_data{full_path, opts};
 
     if(!file_data.m_success) {
@@ -315,6 +317,54 @@ static bool pack_handle_dir(dir_entry& dir_header_copy, const fs::directory_entr
     return true;
 }
 
+// This is to be called inside of pack_handle_symlink
+static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file, const u32 nest_count,
+                           const u8 opts) {
+    file_entry file_data{full_path, opts};
+
+    special_marker file_marker = {.type = ENT_FILE};
+    if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+        return false;
+    }
+
+    if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
+        return false;
+    }
+
+    // check if file has actually some data and size != 0 before writing file
+    // contents
+    if(file_data.m_size > 0) {
+        File_R file_stream{full_path};
+        if(!file_stream.setup_stream(open_type::exists)) {
+            return false;
+        }
+
+        // if the file has actual contents and not empty
+        std::string read_buff{};
+        read_buff.reserve(file_data.m_size);
+        memset(read_buff.data(), '\0', file_data.m_size);
+        if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
+            return false;
+        }
+
+        // TODO: file_data.size() must not be greater than std::streamsize
+        // Maybe use sendfile()?
+        if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
+            return false;
+        }
+
+        dir_header_copy.m_total_file_count--;
+        dir_header_copy.m_total_entry_count--;
+
+        if(nest_count == 0) {
+            dir_header_copy.m_child_entry_count--;
+            dir_header_copy.m_child_file_count--;
+        }
+    }
+
+    return true;
+}
+
 static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
                                 const u32 nest_count) {
     std::error_code err;
@@ -338,9 +388,11 @@ static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_
     } else {
         // All other cases grouped here because:
         // 1) If follow_symlinks and it's not a regular file then simply adding its metadata would be enough
+        // NOTE: this comment...
         // 2) If !follow_symlinks then it'd also be treated as a regular file
         [[maybe_unused]] bool res{
-            pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, follow_symlinks ? (opts ^ O_SYM) : opts)};
+            pack_a_symlink(full_path, dir_header_copy, pack_file, nest_count, follow_symlinks ? (opts ^ O_SYM) : opts)};
+
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
     }
 }
@@ -386,6 +438,8 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             // std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file, const u32 nest_count, const u8 opts
             [[maybe_unused]] bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts)};
             assert(res && "Handling a regular file failed");
+        } else {
+            std::println("[WARNING] skipping a special file: {}", curr_ent.path().c_str());
         }
     }
 
@@ -444,11 +498,6 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     memcpy(curr_file_data.m_filename, unnamed_filename, strlen(unnamed_filename));
                 }
 
-                File_W target_file{curr_file_data.m_filename};
-                if(!target_file.setup_stream(open_type::fresh)) {
-                    return false;
-                }
-
                 if(curr_file_data.m_type == file_type::symlink) {
                     assert(curr_file_data.m_filename_length > 0);
 
@@ -456,10 +505,18 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     // TEST: case
                     fs::create_symlink(curr_file_data.m_secondary_path_length > 0 ? curr_file_data.m_secondary_path : "",
                                        curr_file_fs, err);
+                    std::println(stderr, "{}, {}", err.message(), err.value());
                     curr_file_fs.refresh();
+                    std::println(stderr, "{}", curr_file_data.m_filename);
                     assert(fs::exists(curr_file_fs.symlink_status()));
 
                     continue;
+                }
+
+                // The rest is for regular files
+                File_W target_file{curr_file_data.m_filename};
+                if(!target_file.setup_stream(open_type::fresh)) {
+                    return false;
                 }
 
                 if(curr_file_data.m_size > 0) {

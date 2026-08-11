@@ -30,7 +30,7 @@ class Directory {
 class File {
   public:
     File() = delete;
-    File(const std::filesystem::path& file_path);
+    File(const std::filesystem::path& file_path, bool symlinks_as_symlinks = true);
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     [[nodiscard]] const file_type& type() const noexcept;

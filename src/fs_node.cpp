@@ -53,7 +53,8 @@ Directory::operator bool() const noexcept {
     return m_is_valid;
 }
 
-File::File(const std::filesystem::path& file_path) : m_file_path(fs::absolute(file_path)), m_file(m_file_path) {
+File::File(const std::filesystem::path& file_path, const bool symlinks_as_symlinks)
+    : m_file_path(fs::absolute(file_path)), m_file(m_file_path) {
     std::error_code err{};                                  //  To avoid exceptions
     fs::file_status sym_status{m_file.symlink_status(err)}; // symlink_status to NOT follow symlinks to their targets
 
@@ -63,7 +64,7 @@ File::File(const std::filesystem::path& file_path) : m_file_path(fs::absolute(fi
 
     } else if(fs::is_symlink(sym_status)) {
         m_is_valid = true;
-        m_type = file_type::symlink;
+        m_type = (!symlinks_as_symlinks && fs::exists(m_file.status())) ? file_type::regular : file_type::symlink;
         m_secondary_path = fs::read_symlink(m_file_path);
 
     } else if(fs::is_regular_file(sym_status)) {

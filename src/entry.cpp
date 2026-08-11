@@ -273,7 +273,6 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
             return false;
         }
 
-        // TODO: file_data.size() must not be greater than std::streamsize
         // Maybe use sendfile()?
         if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
             return false;

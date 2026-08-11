@@ -12,7 +12,6 @@
 #include <print>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <cstdio>
 #include <unistd.h>
 #include <system_error>
 #include <utility>
@@ -117,7 +116,6 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                                     : (main_dir_obj.entry_obj().symlink_status(err).permissions()));
 
     for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
-        std::error_code err;
         std::string full_path{entry.path().string()};
 
         // std::println("current entry: {}", full_path);

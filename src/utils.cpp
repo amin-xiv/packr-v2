@@ -56,12 +56,9 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
     // dummy error code
     std::error_code err;
     const bool sym{(opts & O_SYM) > 0};
-
     u64 size{};
 
-    if(!fs::is_directory(dir.status(err))) {
-        return -1;
-    }
+    assert(fs::is_directory(dir.status(err)));
 
     fs::path real_dir_path{fs::is_symlink(dir, err) ? fs::canonical(dir, err)
                                                     : dir.path()}; // In case the provided path refers to a sym_link

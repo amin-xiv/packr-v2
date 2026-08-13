@@ -16,13 +16,15 @@ class Directory {
     [[nodiscard]] const dir_type& type() const noexcept;
     [[nodiscard]] const std::filesystem::path& secondary_path() const noexcept;
     operator bool() const noexcept;
+    [[nodiscard]] std::string_view err() const noexcept;
 
   private:
     const std::filesystem::path m_dir_path;
-    const std::filesystem::directory_entry m_directory;
+    std::filesystem::directory_entry m_directory;
     dir_type m_type;
     std::filesystem::path m_secondary_path; // Points to target directory if it's a symlink
     bool m_is_valid{};
+    void refresh() noexcept;
     std::string m_error_message;
 };
 
@@ -37,6 +39,7 @@ class File {
     [[nodiscard]] const std::filesystem::path& secondary_path() const noexcept;
     operator bool() const noexcept;
     void refresh() noexcept;
+    [[nodiscard]] std::string_view err() const noexcept;
 
   protected:
     const std::filesystem::path m_file_path;
@@ -84,6 +87,7 @@ class File_sym {
     [[nodiscard]] bool has_target() const noexcept;
     operator bool() const noexcept;
     void refresh() noexcept;
+    [[nodiscard]] std::string_view err() const noexcept;
 
   private:
     std::filesystem::path m_symlink_path;

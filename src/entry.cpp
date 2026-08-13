@@ -11,10 +11,11 @@
 #include <print>
 #include <cstring>
 #include <dirent.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <system_error>
 #include <utility>
+
+// TODO: Use copy_file_range to copy files
 
 namespace fs = std::filesystem;
 
@@ -24,6 +25,9 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
     dir_entry data_inner{entry, nest_count + 1, opts};
 
     if(!data_inner.m_success) {
+        std::string err_msg{"in inc_dir_ent_dir_count, dir_entry.m_success returned false for entry.path(): " +
+                            entry.path().string()};
+        debug_log(err_msg);
         dir.m_success = false;
         return false;
     }
@@ -70,6 +74,8 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     std::error_code err;
 
     if(!fs::exists(dir.symlink_status(err)) || !fs::is_directory(dir)) {
+        std::string err_msg{"dir_entry constructor, the path " + dir.path().string() + " doesn't exist or is not a directory"};
+        debug_log(err_msg);
         m_success = false;
         return;
     }
@@ -87,6 +93,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     int stat_res{};
 
     if(!main_dir_obj) {
+        std::string err_msg{"failed to intialize a Directory object at dir_entry constructor, with error message: \n" +
+                            std::string{main_dir_obj.err()}};
+        debug_log(err_msg);
         m_success = false;
         return;
     }
@@ -103,6 +112,8 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     }
 
     if(stat_res == -1) {
+        std::string err_msg{"stat_res returned -1 at dir_entry constructor with dir.path(): " + dir.path().string()};
+        debug_log(err_msg);
         m_success = false;
         return;
     }
@@ -173,6 +184,9 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     File file_obj{file_path};
 
     if(!file_obj) {
+        std::string err_msg{"failed to intialize a File object at file_entry constructor, with error message: \n" +
+                            std::string{file_obj.err()} + " and file_path: " + file_path.string()};
+        debug_log(err_msg);
         m_success = false;
         return;
     }
@@ -198,6 +212,8 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     assert(stat_res != -1);
     // TEST: case
     if(stat_res == -1) {
+        std::string err_msg{"stat_res returned -1 at file_entry constructor with file_path: " + file_path.string()};
+        debug_log(err_msg);
         m_success = false;
         return;
     }
@@ -208,6 +224,9 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     if((follow_symlinks && symlink_target_exists) || file_obj.type() != file_type::symlink) {
         m_size = fs::file_size(file_path, err);
         if(err) { // i.e. if err.value() > 0
+            std::string err_msg{"in file_entry constructor with path " + file_path.string() +
+                                ", fs::file_size.err() was greater than zero"};
+            debug_log(err_msg);
             m_success = false;
             return;
         }
@@ -238,6 +257,9 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
     file_entry file_data{full_path, opts};
 
     if(!file_data.m_success) {
+        std::string err_msg{"in pack_handle_regular_file, file_data.m_success was false with full_path: " +
+                            std::string{full_path}};
+        debug_log(err_msg);
         return false;
     }
 
@@ -250,10 +272,14 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
 
     special_marker file_marker = {.type = ENT_FILE};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+        std::string err_msg{"in pack_handle_regular_file, pack_file.write() failed with file_path: " + std::string{full_path}};
+        debug_log(err_msg);
         return false;
     }
 
     if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
+        std::string err_msg{"in pack_handle_regular_file, pack_file.write() failed with file_path: " + std::string{full_path}};
+        debug_log(err_msg);
         return false;
     }
 
@@ -261,7 +287,17 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
     // contents
     if(file_data.m_size > 0) {
         File_R file_stream{full_path};
+        if(!file_stream) {
+            std::string err_msg{"in pack_handle_regular_file, file_stream's constructor failed with full_path: " +
+                                std::string{full_path} + " and m_error_message: " + std::string{file_stream.err()}};
+            debug_log(err_msg);
+            return false;
+        }
+
         if(!file_stream.setup_stream(open_type::exists)) {
+            std::string err_msg{"in pack_handle_regular_file, file_stream.setup_stream() failed with file_path: " +
+                                std::string{full_path}};
+            debug_log(err_msg);
             return false;
         }
 
@@ -270,11 +306,18 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
         read_buff.reserve(file_data.m_size);
         memset(read_buff.data(), '\0', file_data.m_size);
         if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
+            std::string err_msg{"in pack_handle_regular_file, file_stream.read() failed with file_path: " +
+                                std::string{full_path}};
+            debug_log(err_msg);
             return false;
         }
 
+        // TODO:
         // Maybe use sendfile()?
         if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
+            std::string err_msg{"in pack_handle_regular_file, file_stream.write() failed with file_path: " +
+                                std::string{full_path}};
+            debug_log(err_msg);
             return false;
         }
 
@@ -294,10 +337,14 @@ static bool pack_handle_dir(dir_entry& dir_header_copy, const fs::directory_entr
                             const u32 nest_count) {
     dir_entry dir_data_inner{entry, DEFAULT_ROOT_DIR, opts};
     if(!dir_data_inner.m_success) {
+        std::string err_msg{"in pack_handle_dir, dir_data_inner.m_success failed with entry.path(): " + entry.path().string()};
+        debug_log(err_msg);
         return false;
     }
 
     if(!dir_data_inner.pack_dir(entry, pack_file, opts, nest_count + 1)) {
+        std::string err_msg{"in pack_handle_dir, dir_data_inner.pack_dir() failed with entry.path(): " + entry.path().string()};
+        debug_log(err_msg);
         return false;
     }
 
@@ -319,10 +366,14 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
 
     special_marker file_marker = {.type = ENT_FILE};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+        std::string err_msg{"in pack_a_symlink, pack_file.write() failed with full_path: " + std::string{full_path}};
+        debug_log(err_msg);
         return false;
     }
 
     if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
+        std::string err_msg{"in pack_a_symlink, pack_file.write() failed with full_path: " + std::string{full_path}};
+        debug_log(err_msg);
         return false;
     }
 
@@ -484,6 +535,8 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             {
                 file_entry curr_file_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_file_data), sizeof(file_entry))) {
+                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
+                    debug_log(err_msg);
                     return false;
                 }
 
@@ -509,6 +562,10 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 // The rest is for regular files
                 File_W target_file{curr_file_data.m_filename};
                 if(!target_file.setup_stream(open_type::fresh)) {
+                    std::string err_msg{
+                        "in dir_entry::unpack_dir, target_file.setup_stream() failed with curr_file_data.m_filename: " +
+                        std::string{curr_file_data.m_filename}};
+                    debug_log(err_msg);
                     return false;
                 }
 
@@ -517,10 +574,17 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     file_data_buff.reserve(curr_file_data.m_size);
 
                     if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
+                        std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed with curr_file_data.m_filename: " +
+                                            std::string{curr_file_data.m_filename}};
+                        debug_log(err_msg);
                         return false;
                     }
 
                     if(!target_file.write(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
+                        std::string err_msg{
+                            "in dir_entry::unpack_dir, pack_file.write() failed with curr_file_data.m_filename: " +
+                            std::string{curr_file_data.m_filename}};
+                        debug_log(err_msg);
                         return false;
                     }
                 }
@@ -531,6 +595,8 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             {
                 dir_entry curr_dir_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_dir_data), sizeof(dir_entry))) {
+                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
+                    debug_log(err_msg);
                     return false;
                 }
 
@@ -541,32 +607,46 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 if(mkdir(curr_dir_data.m_dirname, curr_dir_data.m_mode) == -1) {
+                    std::string err_msg{"in dir_entry::unpack_dir, mkdir failed with curr_dir_data.m_dirname: " +
+                                        std::string{curr_dir_data.m_dirname}};
+                    debug_log(err_msg);
                     return false;
                 }
                 char* cwd{getcwd(nullptr, 0)};
                 if(cwd == nullptr) {
+                    std::string err_msg{"in dir_entry::unpack_dir, getcwd failed"};
+                    debug_log(err_msg);
                     return false;
                 }
                 // The path of the newely created directory
                 std::optional<std::string> target_dir_path{join_to_path(curr_dir_data.m_dirname, cwd)};
                 if(!target_dir_path) {
+                    std::string err_msg{"in dir_entry::unpack_dir, join_to_path failed with curr_dir_data.m_dirname: " +
+                                        std::string{curr_dir_data.m_dirname} + " and cwd: " + std::string{cwd}};
+                    debug_log(err_msg);
                     free(cwd);
                     return false;
                 }
 
                 std::string& target_dir_path_str{target_dir_path.value()};
                 if(chdir(target_dir_path_str.data()) == -1) {
+                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with target_dir_path: " + target_dir_path_str};
+                    debug_log(err_msg);
                     free(cwd);
                     return false;
                 }
 
                 if(!unpack_dir(pack_file, opts, nest_count + 1)) {
+                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with target_dir_path: " + target_dir_path_str};
+                    debug_log(err_msg);
                     free(cwd);
                     return false;
                 }
 
                 // Return to curr after unpacking the sub dir
                 if(chdir(cwd) == -1) {
+                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with cwd: " + std::string{cwd}};
+                    debug_log(err_msg);
                     free(cwd);
                     return false;
                 }
@@ -579,6 +659,8 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             read_pack_file = false;
             break;
         default:
+            std::string err_msg{"in dir_entry::unpack_dir, unkown curr_marker.type"};
+            debug_log(err_msg);
             return false;
             break;
         }
@@ -591,20 +673,28 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     // Reading PACK_START
     special_marker pack_start_marker;
     if(!pack_file.read(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
+        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
+        debug_log(err_msg);
         return false;
     }
     if(pack_start_marker.type != PACK_START) {
+        std::string err_msg{"in dir_entry::unpack, didn't find PACK_STARTER marker"};
+        debug_log(err_msg);
         return false;
     }
 
     u8 pack_file_opts{};
     if(!pack_file.read(reinterpret_cast<char*>(&pack_file_opts), sizeof(opts))) {
+        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
+        debug_log(err_msg);
         return false;
     }
 
     // Reading pack_header
     dir_entry pack_header;
     if(!pack_file.read(reinterpret_cast<char*>(&pack_header), sizeof(dir_entry))) {
+        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
+        debug_log(err_msg);
         return false;
     }
 
@@ -612,34 +702,51 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     special_marker initial_dir_start_marker;
     if(!pack_file.read(reinterpret_cast<char*>(&initial_dir_start_marker),
                        static_cast<std::streamsize>(sizeof(special_marker)))) {
+        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
+        debug_log(err_msg);
         return false;
     }
     if(initial_dir_start_marker.type != ENT_DIR_START) {
+        std::string err_msg{"in dir_entry::unpack, initial_dir_start_marker.type wasn't ENT_DIR_START"};
+        debug_log(err_msg);
         return false;
     }
 
     // Making the root directory and changing into it
     if(mkdir(pack_header.m_dirname, pack_header.m_mode) == -1) {
         if(errno != EEXIST) {
+            std::string err_msg{
+                "in dir_entry::unpack, mkdir failed with an errno other than EEXIST, with pack_header.m_dirname " +
+                std::string{pack_header.m_dirname} + " and pack_header.m_mode: " + std::to_string(pack_header.m_mode)};
+            debug_log(err_msg);
             return false;
         }
     }
     char* cwd = getcwd(nullptr, 0);
     if(cwd == nullptr) {
+        std::string err_msg{"in dir_entry::unpack, getcwd failed"};
+        debug_log(err_msg);
         return false;
     }
     std::optional<std::string> root_dir_path{join_to_path(pack_header.m_dirname, cwd)};
     if(!root_dir_path) {
+        std::string err_msg{"in dir_entry::unpack, join_to_path failed with pack_header.m_dirname: " +
+                            std::string{pack_header.m_dirname} + " and cwd: " + std::string{cwd}};
+        debug_log(err_msg);
         return false;
     }
 
     std::string& root_dir_path_str{root_dir_path.value()};
     if(chdir(root_dir_path_str.data()) == -1) {
+        std::string err_msg{"in dir_entry::unpack, chdir failed with root_dir_path_str: " + root_dir_path_str};
+        debug_log(err_msg);
         free(cwd);
         return false;
     }
 
     if(!unpack_dir(pack_file, 0, DEFAULT_ROOT_DIR)) {
+        std::string err_msg{"in dir_entry::unpack, unpack_dir failed"};
+        debug_log(err_msg);
         free(cwd);
         return false;
     }

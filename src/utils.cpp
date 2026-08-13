@@ -6,6 +6,7 @@
 #include <string_view>
 #include <unistd.h>
 #include <cstring>
+#include <cerrno>
 #include <optional>
 #include <string>
 
@@ -156,7 +157,8 @@ fs::path read_symlink(const fs::path& path) {
 
 void debug_log([[maybe_unused]] std::string_view str) {
 #ifndef NDEBUG
-    std::println(stderr, "{}", str);
+    std::println(stderr, "[ERR_MSG]: {}", str);
+    std::println(stderr, "errno: {}", strerror(errno));
 #endif
 }
 

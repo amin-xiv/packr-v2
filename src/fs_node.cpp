@@ -1,6 +1,7 @@
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
+#include <string_view>
 #include <system_error>
 #include <filesystem>
 #include <cassert>
@@ -50,6 +51,15 @@ const fs::path& Directory::secondary_path() const noexcept {
 
 Directory::operator bool() const noexcept {
     return m_is_valid;
+}
+
+void Directory::refresh() noexcept {
+    std::error_code err;
+    m_directory.refresh(err);
+}
+
+std::string_view Directory::err() const noexcept {
+    return m_error_message;
 }
 
 File::File(const std::filesystem::path& file_path, const bool symlinks_as_symlinks)
@@ -104,6 +114,10 @@ void File::refresh() noexcept {
     // dummy error code
     std::error_code err;
     m_file.refresh(err);
+}
+
+std::string_view File::err() const noexcept {
+    return m_error_message;
 }
 
 bool File_R::setup_stream(const open_type type) {
@@ -219,6 +233,10 @@ File_sym::operator bool() const noexcept {
 void File_sym::refresh() noexcept {
     std::error_code err;
     m_symlink_ent.refresh(err);
+}
+
+std::string_view File_sym::err() const noexcept {
+    return m_error_message;
 }
 
 } // namespace packr

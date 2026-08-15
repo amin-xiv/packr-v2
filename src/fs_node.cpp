@@ -147,6 +147,19 @@ bool File_R::read(char* buffer, std::streamsize count) {
     return true;
 }
 
+int File_R::get_fd() const noexcept {
+    assert(m_stream.is_open() && "attempted to get a file descriptor of a non-open stream");
+    return m_stream.native_handle();
+}
+
+pos_type File_R::get_offset() noexcept {
+    return m_stream.tellg();
+}
+
+const std::istream& File_R::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
+    return m_stream.seekg(pos, seek_type);
+}
+
 bool File_W::setup_stream(const open_type type) {
     std::error_code err;
 
@@ -172,6 +185,19 @@ bool File_W::write(const char* buffer, std::streamsize count) {
 
     m_stream.write(buffer, count);
     return true;
+}
+
+int File_W::get_fd() const noexcept {
+    assert(m_stream.is_open() && "attempted to get a file descriptor of a non-open stream");
+    return m_stream.native_handle();
+}
+
+pos_type File_W::get_offset() noexcept {
+    return m_stream.tellp();
+}
+
+const std::ostream& File_W::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
+    return m_stream.seekp(pos, seek_type);
 }
 
 File_sym::File_sym(const fs::path& file_path) {

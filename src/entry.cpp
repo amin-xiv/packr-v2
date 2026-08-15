@@ -15,8 +15,6 @@
 #include <system_error>
 #include <utility>
 
-// TODO: Use copy_file_range to copy files
-
 namespace fs = std::filesystem;
 
 namespace packr {
@@ -55,7 +53,7 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
     std::error_code err;
 
     if(add_size) {
-        dir.m_size += entry.file_size(err);
+        dir.m_size += static_cast<ssize_t>(entry.file_size(err));
     }
     dir.m_total_entry_count++;
     dir.m_total_file_count++;
@@ -222,7 +220,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     std::strcpy(m_filename, actual_filename.data());
 
     if((follow_symlinks && symlink_target_exists) || file_obj.type() != file_type::symlink) {
-        m_size = fs::file_size(file_path, err);
+        m_size = static_cast<ssize_t>(fs::file_size(file_path, err));
         if(err) { // i.e. if err.value() > 0
             std::string err_msg{"in file_entry constructor with path " + file_path.string() +
                                 ", fs::file_size.err() was greater than zero"};
@@ -283,8 +281,7 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
         return false;
     }
 
-    // check if file has actually some data and size != 0 before writing file
-    // contents
+    // check if file has actually some data and size != 0 before writing data
     if(file_data.m_size > 0) {
         File_R file_stream{full_path};
         if(!file_stream) {
@@ -301,25 +298,23 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
             return false;
         }
 
-        // if the file has actual contents and not empty
-        std::string read_buff{};
-        read_buff.reserve(file_data.m_size);
-        memset(read_buff.data(), '\0', file_data.m_size);
-        if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
-            std::string err_msg{"in pack_handle_regular_file, file_stream.read() failed with file_path: " +
-                                std::string{full_path}};
+        const int pack_file_fd{pack_file.get_fd()};
+        const int target_file_fd{file_stream.get_fd()};
+        off_t pack_file_offset{pack_file.get_offset()};
+
+        ssize_t copy_res{
+            copy_file_range(target_file_fd, nullptr, pack_file_fd, &pack_file_offset, static_cast<size_t>(file_data.m_size), 0)};
+
+        assert(copy_res != -1);
+
+        if(copy_res == -1) {
+            std::string err_msg{"copy_file_range failed " + std::to_string(pack_file_fd) + ", " + std::to_string(target_file_fd) +
+                                ", " + std::to_string(pack_file_offset)};
             debug_log(err_msg);
-            return false;
         }
 
-        // TODO:
-        // Maybe use sendfile()?
-        if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
-            std::string err_msg{"in pack_handle_regular_file, file_stream.write() failed with file_path: " +
-                                std::string{full_path}};
-            debug_log(err_msg);
-            return false;
-        }
+        // We need to advance pack_file position as copy_file_range won't advance it
+        pack_file.set_offset(file_data.m_size);
 
         dir_header_copy.m_total_file_count--;
         dir_header_copy.m_total_entry_count--;
@@ -377,6 +372,7 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
         return false;
     }
 
+    assert(file_data.m_size >= 0);
     // check if file has actually some data and size != 0 before writing file
     // contents
     if(file_data.m_size > 0) {
@@ -387,8 +383,8 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
 
         // if the file has actual contents and not empty
         std::string read_buff{};
-        read_buff.reserve(file_data.m_size);
-        memset(read_buff.data(), '\0', file_data.m_size);
+        read_buff.reserve(static_cast<size_t>(file_data.m_size));
+        memset(read_buff.data(), '\0', static_cast<size_t>(file_data.m_size));
         if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
             return false;
         }
@@ -512,8 +508,8 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
 }
 
 bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {
-    // Flag to keep looping
     std::error_code err;
+    // Flag to keep looping
     bool read_pack_file{true};
 
     while(read_pack_file) {
@@ -570,23 +566,23 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 if(curr_file_data.m_size > 0) {
-                    std::string file_data_buff{};
-                    file_data_buff.reserve(curr_file_data.m_size);
+                    const int pack_file_fd{pack_file.get_fd()};
+                    const int target_file_fd{target_file.get_fd()};
+                    off_t pack_file_offset{pack_file.get_offset()};
 
-                    if(!pack_file.read(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
-                        std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed with curr_file_data.m_filename: " +
-                                            std::string{curr_file_data.m_filename}};
+                    ssize_t copy_res{copy_file_range(pack_file_fd, &pack_file_offset, target_file_fd, nullptr,
+                                                     static_cast<size_t>(curr_file_data.m_size), 0)};
+
+                    assert(copy_res != -1);
+
+                    if(copy_res == -1) {
+                        std::string err_msg{"copy_file_range failed " + std::to_string(pack_file_fd) + ", " +
+                                            std::to_string(target_file_fd) + ", " + std::to_string(pack_file_offset)};
                         debug_log(err_msg);
-                        return false;
                     }
 
-                    if(!target_file.write(file_data_buff.data(), static_cast<std::streamsize>(curr_file_data.m_size))) {
-                        std::string err_msg{
-                            "in dir_entry::unpack_dir, pack_file.write() failed with curr_file_data.m_filename: " +
-                            std::string{curr_file_data.m_filename}};
-                        debug_log(err_msg);
-                        return false;
-                    }
+                    // We need to advance pack_file position as copy_file_range won't advance it
+                    pack_file.set_offset(curr_file_data.m_size);
                 }
             }
             break;

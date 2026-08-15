@@ -8,6 +8,8 @@
 #include <string>
 #include <print>
 
+// TODO: debug_log normal mode
+
 namespace fs = std::filesystem;
 
 static void print_help();

@@ -57,6 +57,9 @@ class File_R : public File {
 
     [[nodiscard]] bool setup_stream(const open_type type);
     [[nodiscard]] bool read(char* buffer, std::streamsize count);
+    [[nodiscard]] int get_fd() const noexcept;
+    [[nodiscard]] pos_type get_offset() noexcept;
+    const std::istream& set_offset(const pos_type& pos, std::ios_base::seekdir = std::ios_base::seekdir::_S_cur) noexcept;
 
   private:
     std::ifstream m_stream;
@@ -69,6 +72,9 @@ class File_W : public File {
 
     [[nodiscard]] bool setup_stream(const open_type type);
     [[nodiscard]] bool write(const char* buffer, std::streamsize count);
+    [[nodiscard]] int get_fd() const noexcept;
+    [[nodiscard]] pos_type get_offset() noexcept;
+    const std::ostream& set_offset(const pos_type& pos, std::ios_base::seekdir = std::ios_base::seekdir::_S_cur) noexcept;
 
   private:
     std::ofstream m_stream;
@@ -88,6 +94,7 @@ class File_sym {
     operator bool() const noexcept;
     void refresh() noexcept;
     [[nodiscard]] std::string_view err() const noexcept;
+    [[nodiscard]] int get_fd() const noexcept;
 
   private:
     std::filesystem::path m_symlink_path;

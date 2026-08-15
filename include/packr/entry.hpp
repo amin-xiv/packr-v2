@@ -18,10 +18,10 @@ struct [[gnu::packed]] file_entry {
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
     u64 m_filename_length{};
     u64 m_secondary_path_length{};
-    u64 m_size{};                  // file size
     time_spec m_acc_time{};        // last access time
     time_spec m_mod_time{};        // last modification time
     time_spec m_sc_time{};         // last status change time
+    ssize_t m_size{};              // file size
     u32 m_mode{};                  // permissions
     entry_class_t m_entry_class{}; // u8
     file_type m_type{};            // u8
@@ -44,10 +44,10 @@ struct [[gnu::packed]] dir_entry {
     u64 m_total_entry_count{};
     u64 m_total_dir_count{};
     u64 m_total_file_count{};
-    u64 m_size{};                  // directory size
     time_spec m_acc_time{};        // last access time
     time_spec m_mod_time{};        // last modification time
     time_spec m_sc_time{};         // last status change time
+    ssize_t m_size{};              // file size
     u32 m_mode{};                  // permissions
     entry_class_t m_entry_class{}; // u8
     dir_type m_type{};             // u8

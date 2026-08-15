@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <istream>
 
 namespace packr {
 
@@ -12,6 +13,8 @@ using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
+
+using pos_type = std::istream::pos_type;
 
 inline constexpr u8 ENT_DIR_START{0x01};
 inline constexpr u8 ENT_DIR_END{0x02};

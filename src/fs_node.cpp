@@ -153,10 +153,12 @@ int File_R::get_fd() const noexcept {
 }
 
 pos_type File_R::get_offset() noexcept {
+    assert(m_stream.is_open());
     return m_stream.tellg();
 }
 
 const std::istream& File_R::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
+    assert(m_stream.is_open());
     return m_stream.seekg(pos, seek_type);
 }
 
@@ -193,10 +195,12 @@ int File_W::get_fd() const noexcept {
 }
 
 pos_type File_W::get_offset() noexcept {
+    assert(m_stream.is_open());
     return m_stream.tellp();
 }
 
 const std::ostream& File_W::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
+    assert(m_stream.is_open());
     return m_stream.seekp(pos, seek_type);
 }
 

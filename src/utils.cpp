@@ -155,10 +155,27 @@ fs::path read_symlink(const fs::path& path) {
     return res;
 }
 
-void debug_log([[maybe_unused]] std::string_view str) {
+void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log_type type) {
+    // type is by default log_type::error;
 #ifndef NDEBUG
-    std::println(stderr, "[ERR_MSG]: {}", str);
-    std::println(stderr, "errno: {}", strerror(errno));
+    using enum log_type;
+    std::string type_str{};
+    if(type == error) {
+        type_str = "ERROR";
+
+    } else if(type == warning) {
+        type_str = "WARNING";
+
+    } else if(type == info) {
+        type_str = "INFO";
+    } else { // log_type::none
+        type_str = "";
+    }
+
+    std::println(stderr, "[{}]: {}", type_str, str);
+    if(type != none) {
+        std::println(stderr, "errno: {}", strerror(errno));
+    }
 #endif
 }
 

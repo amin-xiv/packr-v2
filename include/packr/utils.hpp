@@ -25,6 +25,6 @@ std::string create_pack_filename(const dir_entry& dir_data);
 
 std::filesystem::path read_symlink(const std::filesystem::path& path);
 
-void debug_log(std::string_view str);
+void debug_log(std::string_view str, const log_type type = log_type::error);
 
 } // namespace packr

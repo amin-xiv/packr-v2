@@ -60,4 +60,11 @@ enum class open_type : u8 {
     fresh // well I didn't call it new since there's already the 'new' keyword
 };
 
+enum class log_type : u8 {
+    error,
+    warning,
+    info,
+    none,
+};
+
 } // namespace packr

@@ -127,7 +127,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
         std::string full_path{entry.path().string()};
 
-        packr::debug_log("current entry: " + full_path);
+        packr::debug_log("current entry: " + full_path, log_type::info);
 
         fs::file_status ent_sym_status{entry.symlink_status(err)};
 
@@ -160,7 +160,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                 } else if(fs::is_directory(secondary_entry)) {
                     if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
                         packr::debug_log("ERROR COLLECTING (symlinked)DIRECTORY DATA: " + secondary_path.string());
-                        packr::debug_log("    -> symlinked by: " + full_path);
+                        packr::debug_log("    -> symlinked by: " + full_path, log_type::none);
                     }
                 }
             }
@@ -389,8 +389,6 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
             return false;
         }
 
-        // TODO: file_data.size() must not be greater than std::streamsize
-        // Maybe use sendfile()?
         if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
             return false;
         }
@@ -464,7 +462,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};
 
-        packr::debug_log("current entry to pack: " + full_path);
+        packr::debug_log("current entry to pack: " + full_path, log_type::info);
 
         const fs::file_status ent_sym_status{curr_ent.symlink_status(err)};
 

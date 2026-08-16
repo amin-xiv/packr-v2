@@ -21,10 +21,13 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 void print_dir_data(const dir_entry& dir_data) noexcept;
 
-std::string create_pack_filename(const dir_entry& dir_data);
+[[nodiscard]] std::string create_pack_filename(const dir_entry& dir_data);
 
 std::filesystem::path read_symlink(const std::filesystem::path& path);
 
 void debug_log(std::string_view str, const log_type type = log_type::error);
+
+[[nodiscard]] bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
+                                   const ssize_t length);
 
 } // namespace packr

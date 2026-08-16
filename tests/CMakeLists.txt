@@ -35,6 +35,7 @@ add_executable(fs_node
 add_executable(side_tests
 	./side_tests.cpp
 	../src/utils.cpp
+	../src/fs_node.cpp
 )
 
 add_compile_options(-fsanitize=undefined,address)

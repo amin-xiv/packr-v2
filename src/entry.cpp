@@ -298,23 +298,16 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
             return false;
         }
 
-        const int pack_file_fd{pack_file.get_fd()};
-        const int target_file_fd{file_stream.get_fd()};
         off_t pack_file_offset{pack_file.get_offset()};
 
-        ssize_t copy_res{
-            copy_file_range(target_file_fd, nullptr, pack_file_fd, &pack_file_offset, static_cast<size_t>(file_data.m_size), 0)};
+        bool copy_res{packr::copy_file_range(file_stream, 0, pack_file, pack_file_offset, file_data.m_size)};
 
-        assert(copy_res != -1);
+        assert(copy_res);
 
-        if(copy_res == -1) {
-            std::string err_msg{"copy_file_range failed " + std::to_string(pack_file_fd) + ", " + std::to_string(target_file_fd) +
-                                ", " + std::to_string(pack_file_offset)};
+        if(!copy_res) {
+            std::string err_msg{"failed to copy files in pack_handle_regular_file"};
             debug_log(err_msg);
         }
-
-        // We need to advance pack_file position as copy_file_range won't advance it
-        pack_file.set_offset(file_data.m_size);
 
         dir_header_copy.m_total_file_count--;
         dir_header_copy.m_total_entry_count--;
@@ -381,16 +374,14 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
             return false;
         }
 
-        // if the file has actual contents and not empty
-        std::string read_buff{};
-        read_buff.reserve(static_cast<size_t>(file_data.m_size));
-        memset(read_buff.data(), '\0', static_cast<size_t>(file_data.m_size));
-        if(!file_stream.read(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
-            return false;
-        }
+        off_t pack_file_offset{pack_file.get_offset()};
 
-        if(!pack_file.write(read_buff.data(), static_cast<std::streamsize>(file_data.m_size))) {
-            return false;
+        bool copy_res{packr::copy_file_range(file_stream, 0, pack_file, pack_file_offset, file_data.m_size)};
+
+        assert(copy_res);
+        if(!copy_res) {
+            std::string err_msg{"failed to copy files in pack_a_symlink"};
+            debug_log(err_msg);
         }
 
         dir_header_copy.m_total_file_count--;
@@ -564,23 +555,16 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 }
 
                 if(curr_file_data.m_size > 0) {
-                    const int pack_file_fd{pack_file.get_fd()};
-                    const int target_file_fd{target_file.get_fd()};
                     off_t pack_file_offset{pack_file.get_offset()};
 
-                    ssize_t copy_res{copy_file_range(pack_file_fd, &pack_file_offset, target_file_fd, nullptr,
-                                                     static_cast<size_t>(curr_file_data.m_size), 0)};
+                    bool copy_res{packr::copy_file_range(pack_file, pack_file_offset, target_file, 0, curr_file_data.m_size)};
 
-                    assert(copy_res != -1);
+                    assert(copy_res);
 
-                    if(copy_res == -1) {
-                        std::string err_msg{"copy_file_range failed " + std::to_string(pack_file_fd) + ", " +
-                                            std::to_string(target_file_fd) + ", " + std::to_string(pack_file_offset)};
+                    if(!copy_res) {
+                        std::string err_msg{"failed to copy files in unpack_dir"};
                         debug_log(err_msg);
                     }
-
-                    // We need to advance pack_file position as copy_file_range won't advance it
-                    pack_file.set_offset(curr_file_data.m_size);
                 }
             }
             break;

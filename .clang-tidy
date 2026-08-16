@@ -2,7 +2,7 @@
 Checks: |-
   bugprone-*,performance-*,readability-*,modernize-*,
   -modernize-use-trailing-return-type,
-  -readability-function-cognitive-complexity, -readability-duplicate-include,
+  -readability-function-cognitive-complexity,
   -bugprone-easily-swappable-parameters, -modernize-avoid-c-arrays,
   -readability-avoid-const-params-in-decls
 ...

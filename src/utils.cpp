@@ -1,7 +1,8 @@
 #include "packr/types.hpp"
-#include <filesystem>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
+#include <packr/fs_node.hpp>
+#include <filesystem>
 #include <cassert>
 #include <string_view>
 #include <unistd.h>
@@ -173,10 +174,34 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
     }
 
     std::println(stderr, "[{}]: {}", type_str, str);
-    if(type != none) {
+    if(type == error) {
         std::println(stderr, "errno: {}", strerror(errno));
     }
 #endif
+}
+
+[[nodiscard]] bool copy_file_range(File_R& source, off_t source_offset, File_W& dest, off_t dest_offset, const ssize_t length) {
+    const int dest_fd{source.get_fd()};
+    const int out_fd{dest.get_fd()};
+
+    // This copy_file_range function is coming from unistd.h
+    ssize_t copy_res{::copy_file_range(dest_fd, &source_offset, out_fd, &dest_offset, static_cast<size_t>(length), 0)};
+
+    // We need to advance pack_file position as copy_file_range won't advance it
+    // and therefore would confuse any further reading / writing as file descriptor
+    // offsets aren't related to std streams(in terms of positions)
+    source.set_offset(length);
+    dest.set_offset(length);
+
+    assert(copy_res != -1);
+
+    if(copy_res == -1) {
+        std::string err_msg{"copy_file_range failed, dest_fd: " + std::to_string(dest_fd) + ", out_fd:" + std::to_string(out_fd)};
+        debug_log(err_msg);
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace packr

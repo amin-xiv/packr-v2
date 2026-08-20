@@ -25,8 +25,10 @@ TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
     fs::directory_entry new_dummy_dir1{"dummy_dir1"};
     EXPECT_TRUE(new_dummy_dir1.is_directory(err));
 
-    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR, opts};
-    dir_entry new_dummy_dir1_data{new_dummy_dir1, DEFAULT_ROOT_DIR, opts};
+    anc_map_t anc_map{};
+    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR, opts, anc_map};
+    anc_map.clear();
+    dir_entry new_dummy_dir1_data{new_dummy_dir1, DEFAULT_ROOT_DIR, opts, anc_map};
 
     ASSERT_EQ(get_dir_size(dummy_dir1, opts), get_dir_size(new_dummy_dir1, opts));
     ASSERT_EQ(dummy_dir1_data.m_size, new_dummy_dir1_data.m_size);
@@ -46,8 +48,10 @@ TEST_F(packingAndUnpackingTestdata, unpackFollowSymlinks) {
     fs::directory_entry dum{"dum"};
     EXPECT_TRUE(dum.is_directory(err));
 
-    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR, opts};
-    dir_entry dum_data{dum, DEFAULT_ROOT_DIR, opts};
+    anc_map_t anc_map{};
+    dir_entry dummy_dir1_data{dummy_dir1, DEFAULT_ROOT_DIR, opts, anc_map};
+    anc_map.clear();
+    dir_entry dum_data{dum, DEFAULT_ROOT_DIR, opts, anc_map};
 
     ASSERT_EQ(get_dir_size(dummy_dir1, opts), get_dir_size(dum, opts));
     ASSERT_EQ(dummy_dir1_data.m_size, dum_data.m_size);

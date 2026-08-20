@@ -5,8 +5,10 @@
 #include <packr/misc_structs.hpp>
 #include <filesystem>
 #include <sys/param.h> // *_MAX macros
+#include <unordered_map>
 
 namespace packr {
+using anc_map_t = std::unordered_map<std::string, dev_ino_t>;
 
 // This struct would be written into the pack file
 struct [[gnu::packed]] file_entry {
@@ -32,7 +34,7 @@ struct [[gnu::packed]] file_entry {
 struct [[gnu::packed]] dir_entry {
     // Constructors
     dir_entry() = default;
-    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts);
+    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts, anc_map_t& anc_table);
 
     char m_dirname[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink
@@ -51,7 +53,7 @@ struct [[gnu::packed]] dir_entry {
     u32 m_mode{};                  // permissions
     entry_class_t m_entry_class{}; // u8
     dir_type m_type{};             // u8
-    bool m_success{false};
+    dir_entry_ret_code m_success{dir_entry_ret_code::fail};
 
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack
     // file)

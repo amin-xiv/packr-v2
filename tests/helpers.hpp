@@ -23,8 +23,8 @@ void compare_time_specs(const packr::time_spec& lhs, const packr::time_spec& rhs
 }
 
 void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rhs) {
-    ASSERT_TRUE(lhs.m_success);
-    ASSERT_TRUE(rhs.m_success);
+    ASSERT_EQ(lhs.m_success, dir_entry_ret_code::success);
+    ASSERT_EQ(rhs.m_success, dir_entry_ret_code::success);
 
     if(std::string{lhs.m_dirname} == std::string{rhs.m_dirname}) {
         EXPECT_STREQ(lhs.m_dirname, rhs.m_dirname);

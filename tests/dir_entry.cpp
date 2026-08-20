@@ -23,13 +23,14 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     ASSERT_TRUE(fs::is_directory(dir_fs));
 
     // dir_entry initialization
-    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR, opts};
+    anc_map_t anc_map{};
+    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR, opts, anc_map};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
     ASSERT_FALSE(stat(full_path.value().data(), &ent_stat) == -1);
 
-    ASSERT_TRUE(dirEntry.m_success);
+    ASSERT_EQ(dirEntry.m_success, dir_entry_ret_code::success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);
     EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.m_dirname_length);
     EXPECT_EQ(get_dir_size(dir_fs, opts), dirEntry.m_size);

@@ -67,4 +67,10 @@ enum class log_type : u8 {
     none,
 };
 
+enum class dir_entry_ret_code : u8 {
+    success,
+    fail,
+    recursive // returned to avoid recursion
+};
+
 } // namespace packr

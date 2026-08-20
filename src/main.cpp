@@ -83,15 +83,15 @@ int main(int argc, char** argv) {
     }
 
     if(operation == packr::OP_TYPE::PACK) {
-        // packr::pack_header dir_data{dir, src_path, DEFAULT_ROOT_DIR};
         fs::directory_entry dir_ent{src_path};
         if(!fs::is_directory(dir_ent)) {
             std::println(stderr, "Target is NOT a directory!");
             return 1;
         }
 
-        packr::pack_header dir_data{dir_ent, packr::DEFAULT_ROOT_DIR, opts};
-        if(!dir_data.m_success) {
+        packr::anc_map_t anc_map{};
+        packr::pack_header dir_data{dir_ent, packr::DEFAULT_ROOT_DIR, opts, anc_map};
+        if(dir_data.m_success == packr::dir_entry_ret_code::fail) {
             std::println(stderr, "pack_header constructor: {}", std::strerror(errno));
             return 1;
         }

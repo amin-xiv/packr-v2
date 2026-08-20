@@ -13,7 +13,7 @@ struct time_spec {
     i64 nsec;
 };
 
-struct dev_ino {
+struct dev_ino_t {
     u64 dev{};
     u64 ino{};
 };

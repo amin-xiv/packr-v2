@@ -14,19 +14,27 @@
 #include <unistd.h>
 #include <system_error>
 #include <utility>
+#include <limits>
 
 namespace fs = std::filesystem;
 
 namespace packr {
 
-static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, const u8 opts) {
-    dir_entry data_inner{entry, nest_count + 1, opts};
+static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, const u8 opts,
+                                  anc_map_t& anc_table) {
+    dir_entry data_inner{entry, nest_count, opts, anc_table};
 
-    if(!data_inner.m_success) {
+    if(data_inner.m_success == dir_entry_ret_code::fail) {
         std::string err_msg{"in inc_dir_ent_dir_count, dir_entry.m_success returned false for entry.path(): " +
                             entry.path().string()};
         debug_log(err_msg);
-        dir.m_success = false;
+        dir.m_success = dir_entry_ret_code::fail;
+        return false;
+    }
+
+    if(data_inner.m_success == dir_entry_ret_code::recursive) {
+        std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
+        debug_log(err_msg, log_type::info);
         return false;
     }
 
@@ -41,10 +49,13 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
 
     // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
     // we can increment child counts
-    if(nest_count == 0) {
+    if((nest_count - 1) == 0) {
         dir.m_child_entry_count++;
         dir.m_child_dir_count++;
     }
+
+    // just to make sure we don't mess up the arithmetic any point during development
+    assert(nest_count != std::numeric_limits<decltype(nest_count)>::max()); // i.e. it's not -1 for some reason
 
     return true;
 }
@@ -66,15 +77,32 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
     }
 }
 
-dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts) {
+static bool handle_dir_ancestory(const struct stat& stat_obj, anc_map_t& anc_table) {
+    // returns true if current dev and ino numbers are included within the ancestors table
+
+    const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
+    const dev_ino_t dev_ino{.dev = stat_obj.st_dev, .ino = stat_obj.st_ino};
+    const bool collide{!anc_table.empty() && anc_table.contains(dev_ino_str)};
+
+    if(!collide) {
+        const auto emplace_res{anc_table.try_emplace(dev_ino_str, dev_ino)};
+        assert(emplace_res.second); // i.e. insertion has actually taken palce
+    }
+
+    return collide;
+}
+
+dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts, anc_map_t& anc_table) {
     // No need to care whether this object is a symlink itself or not since it would be handled externally
+    // anc_table includes the device and inode numbers of previous parents(obtained by stat), to detect and avoid
+    // endless recursion(that is caused by having a symlink inside a directory pointing to its parent directory)
 
     std::error_code err;
 
     if(!fs::exists(dir.symlink_status(err)) || !fs::is_directory(dir)) {
         std::string err_msg{"dir_entry constructor, the path " + dir.path().string() + " doesn't exist or is not a directory"};
         debug_log(err_msg);
-        m_success = false;
+        m_success = dir_entry_ret_code::fail;
         return;
     }
 
@@ -85,7 +113,6 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     const bool follow_symlinks{(opts & O_SYM) > 0};
 
     Directory main_dir_obj{dir.path()};
-    bool symlink_target_exists{};
 
     struct stat main_stat;
     int stat_res{};
@@ -94,35 +121,48 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         std::string err_msg{"failed to intialize a Directory object at dir_entry constructor, with error message: \n" +
                             std::string{main_dir_obj.err()}};
         debug_log(err_msg);
-        m_success = false;
+        m_success = dir_entry_ret_code::fail;
         return;
     }
 
-    if(main_dir_obj.type() == dir_type::symlink && !main_dir_obj.secondary_path().empty()) {
-        symlink_target_exists = true;
-    } // else it would remain false
-
-    if((follow_symlinks && symlink_target_exists) || nest_count == 0) {
-        stat_res = stat(dir.path().c_str(), &main_stat);
-
-    } else {
-        stat_res = lstat(dir.path().c_str(), &main_stat); // lstat works well with regular files and broken symlinks
+    if(main_dir_obj.type() == dir_type::symlink) {
+        if(main_dir_obj.secondary_path().empty()) {
+            std::string err_msg{"dir symlink " + dir.path().string() + " doesn't have a target"};
+            debug_log(err_msg);
+            m_success = dir_entry_ret_code::fail;
+            return;
+        }
     }
+
+    stat_res = stat(dir.path().c_str(), &main_stat);
 
     if(stat_res == -1) {
         std::string err_msg{"stat_res returned -1 at dir_entry constructor with dir.path(): " + dir.path().string()};
         debug_log(err_msg);
-        m_success = false;
+        m_success = dir_entry_ret_code::fail;
         return;
+    }
+    assert(stat_res != -1);
+
+    if(nest_count == 0) {
+        if((!anc_table.empty())) {
+            assert(anc_table.empty() && "nest_count was zero but anc_table was not empty");
+        }
+    } else {
+        if((anc_table.empty())) {
+            assert(!anc_table.empty() && "nest_count wasn't zero but anc_table was empty");
+        }
+    }
+
+    if(handle_dir_ancestory(main_stat, anc_table)) {
+        m_success = dir_entry_ret_code::recursive;
     }
 
     m_acc_time = {.sec = main_stat.st_atim.tv_sec, .nsec = main_stat.st_atim.tv_nsec};
     m_mod_time = {.sec = main_stat.st_mtim.tv_sec, .nsec = main_stat.st_mtim.tv_nsec};
     m_sc_time = {.sec = main_stat.st_ctim.tv_sec, .nsec = main_stat.st_ctim.tv_nsec};
 
-    m_mode = std::to_underlying((follow_symlinks && symlink_target_exists) || nest_count == 0
-                                    ? (main_dir_obj.entry_obj().status().permissions())
-                                    : (main_dir_obj.entry_obj().symlink_status(err).permissions()));
+    m_mode = std::to_underlying(main_dir_obj.entry_obj().status().permissions());
 
     for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
         std::string full_path{entry.path().string()};
@@ -132,7 +172,19 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         fs::file_status ent_sym_status{entry.symlink_status(err)};
 
         if(fs::is_directory(ent_sym_status)) {
-            if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
+            struct stat inner_stat{};
+            stat_res = 0;
+            stat_res = stat(entry.path().c_str(), &inner_stat);
+
+            if(stat_res == -1) {
+                std::string err_msg{"stat_res returned -1 with dir.path(): " + dir.path().string()};
+                debug_log(err_msg);
+                m_success = dir_entry_ret_code::fail;
+                return;
+            }
+            assert(stat_res != -1);
+
+            if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts, anc_table)) {
                 packr::debug_log("ERROR COLLECTING DIRECTORY DATA: " + full_path);
             }
 
@@ -147,18 +199,21 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             if(secondary_path.empty() || !fs::exists(secondary_entry.symlink_status(err))) {
                 std::println(stderr, "WARNING: Couldn't read symlink target path: {}", secondary_path.string());
                 std::println(stderr, "    -> symlinked by: {}", full_path);
+                // TODO: why when using nest_count + 1 here some tests fail?
                 inc_dir_ent_file_count(*this, entry, nest_count, false);
                 continue;
             }
 
             if(!follow_symlinks) {
+                // NOTE: why not use nest_count + 1?
                 inc_dir_ent_file_count(*this, entry, nest_count, false);
 
             } else {
                 if(fs::is_regular_file(secondary_entry)) {
+                    // NOTE: why not use nest_count + 1?
                     inc_dir_ent_file_count(*this, secondary_entry, nest_count);
                 } else if(fs::is_directory(secondary_entry)) {
-                    if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
+                    if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts, anc_table)) {
                         packr::debug_log("ERROR COLLECTING (symlinked)DIRECTORY DATA: " + secondary_path.string());
                         packr::debug_log("    -> symlinked by: " + full_path, log_type::none);
                     }
@@ -170,7 +225,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
-    m_success = true;
+    const std::string dev_ino_str{std::to_string(main_stat.st_dev) + std::to_string(main_stat.st_ino)};
+    anc_table.erase(dev_ino_str);
+    m_success = dir_entry_ret_code::success;
 }
 
 file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
@@ -323,8 +380,9 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
 
 static bool pack_handle_dir(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
                             const u32 nest_count) {
-    dir_entry dir_data_inner{entry, DEFAULT_ROOT_DIR, opts};
-    if(!dir_data_inner.m_success) {
+    packr::anc_map_t anc_map{};
+    dir_entry dir_data_inner{entry, DEFAULT_ROOT_DIR, opts, anc_map};
+    if(dir_data_inner.m_success == dir_entry_ret_code::fail) {
         std::string err_msg{"in pack_handle_dir, dir_data_inner.m_success failed with entry.path(): " + entry.path().string()};
         debug_log(err_msg);
         return false;

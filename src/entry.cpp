@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 namespace packr {
 
 static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, const u8 opts) {
-    dir_entry data_inner{entry, nest_count + 1, opts};
+    dir_entry data_inner{entry, nest_count, opts};
 
     if(!data_inner.m_success) {
         std::string err_msg{"in inc_dir_ent_dir_count, dir_entry.m_success returned false for entry.path(): " +
@@ -41,7 +41,7 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
 
     // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
     // we can increment child counts
-    if(nest_count == 0) {
+    if((nest_count - 1) == 0) {
         dir.m_child_entry_count++;
         dir.m_child_dir_count++;
     }
@@ -132,7 +132,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         fs::file_status ent_sym_status{entry.symlink_status(err)};
 
         if(fs::is_directory(ent_sym_status)) {
-            if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
+            if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts)) {
                 packr::debug_log("ERROR COLLECTING DIRECTORY DATA: " + full_path);
             }
 
@@ -152,13 +152,16 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             }
 
             if(!follow_symlinks) {
+                // Here we do not add 1 to nest_count as this file is in the same current directory that has the same nest_count
                 inc_dir_ent_file_count(*this, entry, nest_count, false);
 
             } else {
                 if(fs::is_regular_file(secondary_entry)) {
+                    // Here we do not add 1 to nest_count as this file is in the same current directory that has the same
+                    // nest_count
                     inc_dir_ent_file_count(*this, secondary_entry, nest_count);
                 } else if(fs::is_directory(secondary_entry)) {
-                    if(!inc_dir_ent_dir_count(*this, entry, nest_count, opts)) {
+                    if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts)) {
                         packr::debug_log("ERROR COLLECTING (symlinked)DIRECTORY DATA: " + secondary_path.string());
                         packr::debug_log("    -> symlinked by: " + full_path, log_type::none);
                     }

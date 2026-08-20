@@ -205,7 +205,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             }
 
             if(!follow_symlinks) {
-                // NOTE: why not use nest_count + 1?
+                // Here we do not add 1 to nest_count as this file is in the same current directory that has the same nest_count
                 inc_dir_ent_file_count(*this, entry, nest_count, false);
 
             } else {

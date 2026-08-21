@@ -16,7 +16,7 @@
 #include <utility>
 #include <limits>
 
-// TODO: Apparently dir_entry constructor is detecting recusion well, but packing doesn't
+// TODO: Now we need to pack recursive symlinks as symlinks instead of simply discarding them
 
 namespace fs = std::filesystem;
 
@@ -144,12 +144,6 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         return;
     }
     assert(stat_res != -1);
-
-    if(nest_count == 0) {
-        assert(anc_table.empty() && "nest_count was zero but anc_table was not empty");
-    } else {
-        assert(!anc_table.empty() && "nest_count wasn't zero but anc_table was empty");
-    }
 
     if(handle_dir_ancestory(main_stat, anc_table)) {
         m_success = dir_entry_ret_code::recursive;
@@ -322,8 +316,8 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     m_success = true;
 }
 
-static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file,
-                                     const u32 nest_count, const u8 opts, std::string_view alt_filename = "") {
+static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_file, const u8 opts,
+                                     std::string_view alt_filename = "") {
     // alt_filename is used to name a followed symlink as the name of the symlink rather than target's symlink
     // to preserve dir structure
 
@@ -383,49 +377,37 @@ static bool pack_handle_regular_file(std::string_view full_path, dir_entry& dir_
             std::string err_msg{"failed to copy files in pack_handle_regular_file"};
             debug_log(err_msg);
         }
-
-        dir_header_copy.m_total_file_count--;
-        dir_header_copy.m_total_entry_count--;
-
-        if(nest_count == 0) {
-            dir_header_copy.m_child_entry_count--;
-            dir_header_copy.m_child_file_count--;
-        }
     }
 
     return true;
 }
 
-static bool pack_handle_dir(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
-                            const u32 nest_count) {
-    packr::anc_map_t anc_map{};
-    dir_entry dir_data_inner{entry, DEFAULT_ROOT_DIR, opts, anc_map};
-    if(dir_data_inner.m_success == dir_entry_ret_code::fail) {
+static bool pack_handle_dir(const fs::directory_entry& entry, File_W& pack_file, const u8 opts, const u32 nest_count,
+                            anc_map_t& anc_table) {
+    dir_entry dir_data{entry, nest_count, opts, anc_table};
+    if(dir_data.m_success == dir_entry_ret_code::fail) {
         std::string err_msg{"in pack_handle_dir, dir_data_inner.m_success failed with entry.path(): " + entry.path().string()};
         debug_log(err_msg);
         return false;
     }
 
-    if(!dir_data_inner.pack_dir(entry, pack_file, opts, nest_count + 1)) {
+    if(dir_data.m_success == dir_entry_ret_code::recursive) {
+        std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
+        debug_log(err_msg, log_type::info);
+        return true;
+    }
+
+    if(!dir_data.pack_dir(entry, pack_file, opts, nest_count + 1)) {
         std::string err_msg{"in pack_handle_dir, dir_data_inner.pack_dir() failed with entry.path(): " + entry.path().string()};
         debug_log(err_msg);
         return false;
-    }
-
-    dir_header_copy.m_total_dir_count--;
-    dir_header_copy.m_total_entry_count--;
-
-    if((nest_count - 1) == 0) {
-        dir_header_copy.m_child_entry_count--;
-        dir_header_copy.m_child_dir_count--;
     }
 
     return true;
 }
 
 // This is to be called inside of pack_handle_symlink
-static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file, const u32 nest_count,
-                           const u8 opts) {
+static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const u8 opts) {
     file_entry file_data{full_path, opts};
 
     special_marker file_marker = {.type = ENT_FILE};
@@ -459,21 +441,13 @@ static bool pack_a_symlink(std::string_view full_path, dir_entry& dir_header_cop
             std::string err_msg{"failed to copy files in pack_a_symlink"};
             debug_log(err_msg);
         }
-
-        dir_header_copy.m_total_file_count--;
-        dir_header_copy.m_total_entry_count--;
-
-        if(nest_count == 0) {
-            dir_header_copy.m_child_entry_count--;
-            dir_header_copy.m_child_file_count--;
-        }
     }
 
     return true;
 }
 
-static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_entry& entry, File_W& pack_file, const u8 opts,
-                                const u32 nest_count) {
+static void pack_handle_symlink(const fs::directory_entry& entry, File_W& pack_file, const u8 opts, const u32 nest_count,
+                                anc_map_t& anc_table) {
     std::error_code err;
     const bool follow_symlinks{(opts & O_SYM) > 0};
     const std::string full_path{entry.path().string()};
@@ -482,23 +456,22 @@ static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_
     if(follow_symlinks && fs::is_regular_file(entry, err)) {
         assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
 
-        [[maybe_unused]] bool res{pack_handle_regular_file(target_path.string(), dir_header_copy, pack_file, nest_count, opts,
-                                                           entry.path().filename().string())};
+        [[maybe_unused]] bool res{
+            pack_handle_regular_file(target_path.string(), pack_file, opts, entry.path().filename().string())};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
 
     } else if(follow_symlinks && fs::is_directory(entry, err)) {
         assert(!target_path.empty() && "Failed to get symlink target path while handling a symlink");
 
-        [[maybe_unused]] bool res{pack_handle_dir(dir_header_copy, entry, pack_file, opts, nest_count)};
+        [[maybe_unused]] bool res{pack_handle_dir(entry, pack_file, opts, nest_count, anc_table)};
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
 
     } else {
-        // All other cases grouped here because:
-        // 1) If follow_symlinks and it's not a regular file then simply adding its metadata would be enough
-        // NOTE: this comment...
-        // 2) If !follow_symlinks then it'd also be treated as a regular file
-        [[maybe_unused]] bool res{
-            pack_a_symlink(full_path, dir_header_copy, pack_file, nest_count, follow_symlinks ? (opts ^ O_SYM) : opts)};
+        assert(fs::is_symlink(entry, err)); // make sure it is not a special files since we ignore them
+        // Other cases grouped here because:
+        // 1) If !follow_symlinks && file is regular, it would be handled correctly in pack_a_symlink
+        // 2) If file has no valid target, it would also be handled correctly
+        [[maybe_unused]] bool res{pack_a_symlink(full_path, pack_file, follow_symlinks ? (opts ^ O_SYM) : opts)};
 
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
     }
@@ -506,7 +479,6 @@ static void pack_handle_symlink(dir_entry& dir_header_copy, const fs::directory_
 
 bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
     std::error_code err;
-    dir_entry dir_header_copy{*this};
 
     // write the dir header upfront only if it's the intial pack header(nest_count = 0)
     if(nest_count == 0) {
@@ -526,6 +498,21 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }
     }
 
+    // NOTE: initialize here anc_table
+    struct stat main_stat;
+    int stat_res{stat(dir.path().c_str(), &main_stat)};
+
+    if(stat_res == -1) {
+        std::string err_msg{"stat_res returned -1 at dir_entry::pack_dir with dir.path(): " + dir.path().string()};
+        debug_log(err_msg);
+        m_success = dir_entry_ret_code::fail;
+        return false;
+    }
+    assert(stat_res != -1);
+
+    anc_map_t anc_table{};
+    handle_dir_ancestory(main_stat, anc_table); // To add current ino and dev nums to the table
+
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};
 
@@ -535,15 +522,15 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
 
         // Returns false in case curr_ent is a symlink to a directory
         if(fs::is_directory(ent_sym_status)) {
-            [[maybe_unused]] bool res{pack_handle_dir(dir_header_copy, curr_ent, pack_file, opts, nest_count + 1)};
+            [[maybe_unused]] bool res{pack_handle_dir(curr_ent, pack_file, opts, nest_count, anc_table)};
             assert(res && "Handling a directory failed");
 
         } else if(fs::is_symlink(ent_sym_status)) {
-            pack_handle_symlink(dir_header_copy, curr_ent, pack_file, opts, nest_count + 1);
+            pack_handle_symlink(curr_ent, pack_file, opts, nest_count, anc_table);
 
         } else if(fs::is_regular_file(ent_sym_status)) {
             // std::string_view full_path, dir_entry& dir_header_copy, File_W& pack_file, const u32 nest_count, const u8 opts
-            [[maybe_unused]] bool res{pack_handle_regular_file(full_path, dir_header_copy, pack_file, nest_count, opts)};
+            [[maybe_unused]] bool res{pack_handle_regular_file(full_path, pack_file, opts)};
             assert(res && "Handling a regular file failed");
         } else {
             std::println(stderr, "WARNING skipping a special file: {}", curr_ent.path().string());

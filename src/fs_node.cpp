@@ -209,8 +209,8 @@ File_sym::File_sym(const fs::path& file_path) {
 
     const fs::file_status file_sym_stat{fs::symlink_status(file_path, err)};
     const bool symlink_exists{fs::exists(file_sym_stat)};
-    assert(symlink_exists);
-    assert(fs::is_symlink(file_sym_stat));
+    assert(fs::is_symlink(file_sym_stat) && symlink_exists &&
+           "Tried to construct a File_W obj with a non-symlink/existent entry");
 
     // As assertions won't run in release mode
     if(!symlink_exists) {

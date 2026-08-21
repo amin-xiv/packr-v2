@@ -17,6 +17,8 @@
 #include <limits>
 
 // TODO: Now we need to pack recursive symlinks as symlinks instead of simply discarding them
+// TODO: make sure it works with cycle_test/
+// NOTE: Stopped at pack_dir_as_symlink, which should be integrated to packing/unpacking
 
 namespace fs = std::filesystem;
 
@@ -316,6 +318,49 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     m_success = true;
 }
 
+dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
+    std::error_code err; // To avoid exceptions
+    assert(fs::is_symlink(dir, err));
+
+    File_sym file_obj{dir};
+    const fs::path& symlink_path{dir.path()}; // the actual target symlink to pack
+
+    if(!file_obj) {
+        std::string err_msg{"failed to intialize a File object at dir_sym_entry constructor, with error message: \n" +
+                            std::string{file_obj.err()} + " and symlink_path: " + dir.path().string()};
+        debug_log(err_msg);
+        m_success = false;
+        return;
+    }
+
+    struct stat stat_obj;
+    int stat_res{lstat(symlink_path.c_str(), &stat_obj)};
+
+    assert(stat_res != -1);
+    if(stat_res == -1) {
+        std::string err_msg{"stat_res returned -1 at dir_sym_entry constructor with symlink_path: " + symlink_path.string()};
+        debug_log(err_msg);
+        m_success = false;
+        return;
+    }
+
+    const std::string& actual_filename{symlink_path.filename().string()};
+    std::strcpy(m_name, actual_filename.data());
+
+    m_name_length = actual_filename.length();
+
+    const fs::path& plain_target_path{fs::read_symlink(dir, err)};
+    memcpy(m_secondary_path, plain_target_path.c_str(), plain_target_path.string().length());
+    m_secondary_path_length = plain_target_path.string().length();
+
+    m_acc_time = {.sec = stat_obj.st_atim.tv_sec, .nsec = stat_obj.st_atim.tv_nsec};
+    m_mod_time = {.sec = stat_obj.st_mtim.tv_sec, .nsec = stat_obj.st_mtim.tv_nsec};
+    m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
+    m_mode = std::to_underlying(file_obj.entry_obj().symlink_status(err).permissions());
+
+    m_success = true;
+}
+
 static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_file, const u8 opts,
                                      std::string_view alt_filename = "") {
     // alt_filename is used to name a followed symlink as the name of the symlink rather than target's symlink
@@ -377,6 +422,28 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
             std::string err_msg{"failed to copy files in pack_handle_regular_file"};
             debug_log(err_msg);
         }
+    }
+
+    return true;
+}
+
+static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_file) {
+    std::error_code err;
+    assert(fs::is_symlink(dir, err) && fs::is_directory(dir, err));
+
+    dir_sym_entry ent_data{dir};
+
+    special_marker file_marker = {.type = ENT_DIR_SYM};
+    if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+        std::string err_msg{"in pack_dir_as_symlink, pack_file.write() failed with target path: " + dir.path().string()};
+        debug_log(err_msg);
+        return false;
+    }
+
+    if(!pack_file.write(reinterpret_cast<char*>(&ent_data), sizeof(file_entry))) {
+        std::string err_msg{"in pack_dir_as_symlink, pack_file.write() failed with target path: " + dir.path().string()};
+        debug_log(err_msg);
+        return false;
     }
 
     return true;
@@ -471,8 +538,8 @@ static void pack_handle_symlink(const fs::directory_entry& entry, File_W& pack_f
         // Other cases grouped here because:
         // 1) If !follow_symlinks && file is regular, it would be handled correctly in pack_a_symlink
         // 2) If file has no valid target, it would also be handled correctly
+        // opts xor'd with O_SYM so that it's packed as a symlink rather than trying to get to its target(as it doesn't exist)
         [[maybe_unused]] bool res{pack_a_symlink(full_path, pack_file, follow_symlinks ? (opts ^ O_SYM) : opts)};
-
         assert(res && "Failed to handle regular file while handling its corrosponding symlink");
     }
 }
@@ -498,7 +565,6 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
         }
     }
 
-    // NOTE: initialize here anc_table
     struct stat main_stat;
     int stat_res{stat(dir.path().c_str(), &main_stat)};
 
@@ -536,6 +602,9 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
             std::println(stderr, "WARNING skipping a special file: {}", curr_ent.path().string());
         }
     }
+
+    const std::string dev_ino_str{std::to_string(main_stat.st_dev) + std::to_string(main_stat.st_ino)};
+    anc_table.erase(dev_ino_str);
 
     special_marker dir_marker_end{.type = ENT_DIR_END};
     return pack_file.write(reinterpret_cast<char*>(&dir_marker_end), sizeof(special_marker)); // bool

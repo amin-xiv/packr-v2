@@ -38,7 +38,7 @@ void add_dirname(dir_entry* dir_ent, std::string named_as, const std::string& sr
         memcpy(dir_ent->m_dirname, named_as_ptr, strlen(named_as_ptr) + 1); // +1 for the \0
         dir_ent->m_dirname_length = strlen(dir_ent->m_dirname);
     } else {
-        size_t slash_last_instance{src_path.rfind('/')};
+        std::size_t slash_last_instance{src_path.rfind('/')};
         std::string target_name{
             src_path.substr(slash_last_instance == std::string::npos ? 0 : slash_last_instance + 1)}; // +1 to skip the last '/'
         char* target_name_ptr{target_name.data()};
@@ -52,7 +52,7 @@ std::optional<std::string> extract_filename(std::string_view path) {
         return std::nullopt;
     }
 
-    size_t slash_last_instance{path.rfind('/')};
+    std::size_t slash_last_instance{path.rfind('/')};
     std::string filename{
         path.substr(slash_last_instance == std::string::npos ? 0 : slash_last_instance + 1)}; // +1 to skip the last '/'
     return filename;
@@ -188,7 +188,7 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
     const int out_fd{dest.get_fd()};
 
     // This copy_file_range function is coming from unistd.h
-    ssize_t copy_res{::copy_file_range(dest_fd, &source_offset, out_fd, &dest_offset, static_cast<size_t>(length), 0)};
+    ssize_t copy_res{::copy_file_range(dest_fd, &source_offset, out_fd, &dest_offset, static_cast<std::size_t>(length), 0)};
 
     // We need to advance pack_file position as copy_file_range won't advance it
     // and therefore would confuse any further reading / writing as file descriptor

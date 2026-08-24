@@ -19,6 +19,8 @@
 // TODO: Now we need to pack recursive symlinks as symlinks instead of simply discarding them
 // TODO: make sure it works with cycle_test/
 // NOTE: Stopped at pack_dir_as_symlink, which should be integrated to packing/unpacking
+//
+// BUG: symlink dirs aren't re-symlinked to their targets
 
 namespace fs = std::filesystem;
 

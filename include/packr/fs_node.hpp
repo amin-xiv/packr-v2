@@ -16,6 +16,7 @@ class Directory {
     [[nodiscard]] const dir_type& type() const noexcept;
     [[nodiscard]] const std::filesystem::path& secondary_path() const noexcept;
     operator bool() const noexcept;
+    void refresh() noexcept;
     [[nodiscard]] std::string_view err() const noexcept;
 
   private:
@@ -24,7 +25,6 @@ class Directory {
     dir_type m_type;
     std::filesystem::path m_secondary_path; // Points to target directory if it's a symlink
     bool m_is_valid{};
-    void refresh() noexcept;
     std::string m_error_message;
 };
 

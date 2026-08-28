@@ -13,7 +13,6 @@ namespace fs = std::filesystem;
 static void print_help();
 
 int main(int argc, char** argv) {
-#pragma region vars
     int cur_opt{};
     packr::u8 opts{};
     std::string src_path{};
@@ -21,7 +20,6 @@ int main(int argc, char** argv) {
     bool op_provided{false}; // Whether a -p or -u option was provided
     bool path_provided{false};
     packr::OP_TYPE operation{};
-#pragma endregion
 
     while((cur_opt = getopt(argc, argv, "pushl:a:")) != -1) {
         switch(static_cast<char>(cur_opt)) {

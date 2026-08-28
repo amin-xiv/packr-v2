@@ -81,8 +81,51 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
     }
 }
 
-static bool handle_dir_ancestory(const struct stat& stat_obj, anc_map_t& anc_table, bool compare_only = false) {
-    // returns true if current dev and ino numbers are included within the ancestors table
+// called at handle_dir_ancestory to initially populate anc_table with the parents of dir
+static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table, bool second_pass = false) {
+    // second_pass flag is to denote the second pass on which we populate by ino and dev nums of the canonical path
+    if(second_pass) {
+        assert(!anc_table.empty() && "anc_table was empty at populate_with_parents at second_pass");
+    } else {
+        assert(anc_table.empty() && "anc_table wasn't empty at populate_with_parents");
+    }
+
+    std::error_code err;
+    dir = second_pass ? fs::directory_entry{fs::canonical(dir.path(), err)} : fs::directory_entry{fs::absolute(dir.path(), err)};
+    fs::directory_entry curr_parent{dir.path().parent_path(), err};
+    bool loop{curr_parent.exists(err)};
+
+    while(loop) {
+        fs::path curr_parent_path{curr_parent.path()};
+        struct stat stat_obj{};
+        int stat_res{stat(curr_parent_path.c_str(), &stat_obj)};
+        assert((stat_res != -1) && "stat returned -1 while handling a fresh anc_table");
+
+        const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
+        const dev_ino_t dev_ino{.dev = stat_obj.st_dev, .ino = stat_obj.st_ino};
+        [[maybe_unused]] const auto emplace_res{anc_table.try_emplace(dev_ino_str, dev_ino)};
+        // no need to assert if it was emplaced since paths might be non-canonical
+
+        if(!curr_parent_path.has_relative_path()) {
+            loop = false;
+        } else {
+            curr_parent = fs::directory_entry{curr_parent.path().parent_path(), err};
+        }
+    }
+
+    if(!second_pass && (fs::canonical(dir.path()) != dir.path())) {
+        populate_with_parents(dir, anc_table, true);
+    }
+}
+
+bool handle_dir_ancestory(const struct stat& stat_obj, anc_map_t& anc_table, const fs::directory_entry& dir, bool compare_only) {
+    std::error_code err;
+    assert(dir.exists(err));
+
+    // pre-populate the table with all ancestor's nums to avoid that type of recursion
+    if(anc_table.size() == 0) {
+        populate_with_parents(dir, anc_table);
+    }
 
     const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
     const dev_ino_t dev_ino{.dev = stat_obj.st_dev, .ino = stat_obj.st_ino};
@@ -148,7 +191,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     }
     assert(stat_res != -1);
 
-    if(handle_dir_ancestory(main_stat, anc_table)) {
+    if(handle_dir_ancestory(main_stat, anc_table, dir)) {
         m_success = dir_entry_ret_code::recursive;
         return;
     }
@@ -180,7 +223,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             assert(stat_res != -1);
 
             // compare_only as the table would be assumed unaltered at the nest inc_dir_ent_dir_count call
-            if(handle_dir_ancestory(inner_stat, anc_table, true)) {
+            if(handle_dir_ancestory(inner_stat, anc_table, entry, true)) {
                 continue;
             }
 
@@ -224,7 +267,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                     assert(stat_res != -1);
 
                     // compare_only as the table would be assumed unaltered at the nest inc_dir_ent_dir_count call
-                    if(handle_dir_ancestory(inner_stat, anc_table, true)) {
+                    if(handle_dir_ancestory(inner_stat, anc_table, entry, true)) {
                         continue;
                     }
 
@@ -321,43 +364,80 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
 
 dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
     std::error_code err; // To avoid exceptions
-    assert(fs::is_symlink(dir, err));
+    assert(fs::exists(dir.symlink_status(err)) && fs::is_directory(dir, err));
 
-    File_sym file_obj{dir};
-    const fs::path& symlink_path{dir.path()}; // the actual target symlink to pack
+    bool is_symlink{fs::is_symlink(dir, err)};
 
-    if(!file_obj) {
-        std::string err_msg{"failed to intialize a File object at dir_sym_entry constructor, with error message: \n" +
-                            std::string{file_obj.err()} + " and symlink_path: " + dir.path().string()};
-        debug_log(err_msg);
-        m_success = false;
-        return;
+    // is_symlink (default = true), denotes whether the dir is actually a symlink to a dir or a standalone dir
+    if(is_symlink) {
+        File_sym file_obj{dir};
+        const fs::path& symlink_path{dir.path()}; // the actual target symlink to pack
+
+        if(!file_obj) {
+            std::string err_msg{"failed to intialize a File object at dir_sym_entry constructor, with error message: \n" +
+                                std::string{file_obj.err()} + " and symlink_path: " + dir.path().string()};
+            debug_log(err_msg);
+            m_success = false;
+            return;
+        }
+
+        struct stat stat_obj;
+        int stat_res{lstat(symlink_path.c_str(), &stat_obj)};
+
+        assert(stat_res != -1);
+        if(stat_res == -1) {
+            std::string err_msg{"stat_res returned -1 at dir_sym_entry constructor with symlink_path: " + symlink_path.string()};
+            debug_log(err_msg);
+            m_success = false;
+            return;
+        }
+
+        const std::string& actual_filename{symlink_path.filename().string()};
+        std::strcpy(m_name, actual_filename.data());
+
+        m_name_length = actual_filename.length();
+
+        const fs::path& plain_target_path{fs::read_symlink(dir, err)};
+        memcpy(m_secondary_path, plain_target_path.c_str(), plain_target_path.string().length());
+        m_secondary_path_length = plain_target_path.string().length();
+
+        m_acc_time = {.sec = stat_obj.st_atim.tv_sec, .nsec = stat_obj.st_atim.tv_nsec};
+        m_mod_time = {.sec = stat_obj.st_mtim.tv_sec, .nsec = stat_obj.st_mtim.tv_nsec};
+        m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
+        m_mode = std::to_underlying(file_obj.entry_obj().symlink_status(err).permissions());
+
+    } else {
+        // time_spec m_acc_time{}; // last access time
+        // time_spec m_mod_time{}; // last modification time
+        // time_spec m_sc_time{};  // last status change time
+        // u32 m_mode{};
+
+        const fs::path& dir_path{dir.path()};
+        struct stat stat_obj;
+        int stat_res{stat(dir_path.c_str(), &stat_obj)};
+
+        assert(stat_res != -1);
+        if(stat_res == -1) {
+            std::string err_msg{"stat_res returned -1 at dir_sym_entry with dir.path(): " + dir_path.string()};
+            debug_log(err_msg);
+            m_success = false;
+            return;
+        }
+
+        const std::string& actual_dirname{dir_path.filename().string()};
+        std::strcpy(m_name, actual_dirname.data());
+        m_name_length = actual_dirname.length();
+
+        // it's actual_dirname as it's not a symlink, and the actual path isn't tracked, so anything..
+        const fs::path& target_path{actual_dirname};
+        memcpy(m_secondary_path, target_path.c_str(), target_path.string().length());
+        m_secondary_path_length = target_path.string().length();
+
+        m_acc_time = {.sec = stat_obj.st_atim.tv_sec, .nsec = stat_obj.st_atim.tv_nsec};
+        m_mod_time = {.sec = stat_obj.st_mtim.tv_sec, .nsec = stat_obj.st_mtim.tv_nsec};
+        m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
+        m_mode = std::to_underlying(dir.status(err).permissions());
     }
-
-    struct stat stat_obj;
-    int stat_res{lstat(symlink_path.c_str(), &stat_obj)};
-
-    assert(stat_res != -1);
-    if(stat_res == -1) {
-        std::string err_msg{"stat_res returned -1 at dir_sym_entry constructor with symlink_path: " + symlink_path.string()};
-        debug_log(err_msg);
-        m_success = false;
-        return;
-    }
-
-    const std::string& actual_filename{symlink_path.filename().string()};
-    std::strcpy(m_name, actual_filename.data());
-
-    m_name_length = actual_filename.length();
-
-    const fs::path& plain_target_path{fs::read_symlink(dir, err)};
-    memcpy(m_secondary_path, plain_target_path.c_str(), plain_target_path.string().length());
-    m_secondary_path_length = plain_target_path.string().length();
-
-    m_acc_time = {.sec = stat_obj.st_atim.tv_sec, .nsec = stat_obj.st_atim.tv_nsec};
-    m_mod_time = {.sec = stat_obj.st_mtim.tv_sec, .nsec = stat_obj.st_mtim.tv_nsec};
-    m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
-    m_mode = std::to_underlying(file_obj.entry_obj().symlink_status(err).permissions());
 
     m_success = true;
 }
@@ -430,7 +510,7 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
 
 static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_file) {
     std::error_code err;
-    assert(fs::is_symlink(dir, err) && fs::is_directory(dir, err));
+    assert(fs::is_directory(dir, err));
 
     dir_sym_entry ent_data{dir};
     assert(ent_data.m_success);
@@ -583,7 +663,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     assert(stat_res != -1);
 
     // No need to check here for return value since pack_handle_dir should already check for ancestory matches
-    handle_dir_ancestory(main_stat, anc_table); // To add current ino and dev nums to the table
+    handle_dir_ancestory(main_stat, anc_table, dir); // To add current ino and dev nums to the table
 
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};

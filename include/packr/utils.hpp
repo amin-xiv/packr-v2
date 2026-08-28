@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <sys/stat.h>
 
 namespace packr {
 
@@ -30,4 +31,6 @@ void debug_log(std::string_view str, const log_type type = log_type::error);
 [[nodiscard]] bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
                                    const ssize_t length);
 
+bool handle_dir_ancestory(const struct ::stat& stat_obj, anc_map_t& anc_table, const std::filesystem::directory_entry& dir,
+                          bool compare_only = false);
 } // namespace packr

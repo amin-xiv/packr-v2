@@ -666,15 +666,9 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     return false;
                 }
 
-                static const char* unnamed_filename = "unamed-file"; // Just in case the file had no name for some reason
-                if(curr_file_data.m_filename_length < 1) {
-                    // Copying it into curr_file_data.filename so a flag isn't needed
-                    memcpy(curr_file_data.m_filename, unnamed_filename, strlen(unnamed_filename));
-                }
+                assert(curr_file_data.m_filename_length > 0);
 
                 if(curr_file_data.m_type == file_type::symlink) {
-                    assert(curr_file_data.m_filename_length > 0);
-
                     fs::directory_entry curr_file_fs{curr_file_data.m_filename};
                     // TEST: case
                     fs::create_symlink(curr_file_data.m_secondary_path_length > 0 ? curr_file_data.m_secondary_path : "",
@@ -717,12 +711,6 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
                     debug_log(err_msg);
                     return false;
-                }
-
-                static const char* unnamed_dirname = "unamed-directory"; // Just in case the dir had no name for some reason
-                if(curr_dir_data.m_dirname_length < 1) {
-                    // Copying it into curr_dir_data.dirname so a flag isn't needed
-                    memcpy(curr_dir_data.m_dirname, unnamed_dirname, strlen(unnamed_dirname));
                 }
 
                 if(mkdir(curr_dir_data.m_dirname, curr_dir_data.m_mode) == -1) {

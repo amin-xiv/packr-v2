@@ -41,6 +41,7 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
     if(data_inner.m_success == dir_entry_ret_code::recursive) {
         std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
         debug_log(err_msg, log_type::info);
+        // not returning to allow increasing counts as this directory will be packed as a symlink
     }
 
     dir.m_size += data_inner.m_size;
@@ -434,6 +435,7 @@ static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_fil
     assert(fs::is_symlink(dir, err) && fs::is_directory(dir, err));
 
     dir_sym_entry ent_data{dir};
+    assert(ent_data.m_success);
 
     special_marker file_marker = {.type = ENT_DIR_SYM};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
@@ -442,7 +444,7 @@ static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_fil
         return false;
     }
 
-    if(!pack_file.write(reinterpret_cast<char*>(&ent_data), sizeof(file_entry))) {
+    if(!pack_file.write(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
         std::string err_msg{"in pack_dir_as_symlink, pack_file.write() failed with target path: " + dir.path().string()};
         debug_log(err_msg);
         return false;
@@ -461,12 +463,15 @@ static bool pack_handle_dir(const fs::directory_entry& entry, File_W& pack_file,
     }
 
     if(dir_data.m_success == dir_entry_ret_code::recursive) {
+        [[maybe_unused]] bool res{pack_dir_as_symlink(entry, pack_file)};
+        assert(res && "pack_dir_as_symlink failed in pack_handle_dir");
+
         std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
         debug_log(err_msg, log_type::info);
         return true;
     }
 
-    if(!dir_data.pack_dir(entry, pack_file, opts, nest_count + 1)) {
+    if(!dir_data.pack_dir(entry, pack_file, opts, nest_count + 1, anc_table)) {
         std::string err_msg{"in pack_handle_dir, dir_data_inner.pack_dir() failed with entry.path(): " + entry.path().string()};
         debug_log(err_msg);
         return false;
@@ -505,11 +510,11 @@ static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const 
 
         bool copy_res{packr::copy_file_range(file_stream, 0, pack_file, pack_file_offset, file_data.m_size)};
 
-        assert(copy_res);
         if(!copy_res) {
             std::string err_msg{"failed to copy files in pack_a_symlink"};
             debug_log(err_msg);
         }
+        assert(copy_res);
     }
 
     return true;
@@ -546,7 +551,8 @@ static void pack_handle_symlink(const fs::directory_entry& entry, File_W& pack_f
     }
 }
 
-bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count) {
+bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts, const u32 nest_count,
+                         anc_map_t& anc_table) {
     std::error_code err;
 
     // write the dir header upfront only if it's the intial pack header(nest_count = 0)
@@ -578,7 +584,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
     assert(stat_res != -1);
 
-    anc_map_t anc_table{};
+    // No need to check here for return value since pack_handle_dir should already check for ancestory matches
     handle_dir_ancestory(main_stat, anc_table); // To add current ino and dev nums to the table
 
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
@@ -622,7 +628,8 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
         return false;
     }
 
-    if(!pack_dir(dir, pack_file, opts, DEFAULT_ROOT_DIR)) {
+    anc_map_t root_anc_table{};
+    if(!pack_dir(dir, pack_file, opts, DEFAULT_ROOT_DIR, root_anc_table)) {
         return false;
     }
 
@@ -770,6 +777,25 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
         case ENT_DIR_END:
             read_pack_file = false;
             break;
+
+        case ENT_DIR_SYM:
+            {
+                dir_sym_entry ent_data;
+                if(!pack_file.read(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
+                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
+                    debug_log(err_msg);
+                    return false;
+                }
+
+                assert(ent_data.m_name_length > 0);
+
+                fs::directory_entry ent_fs{ent_data.m_name};
+                fs::create_symlink(ent_data.m_secondary_path_length > 0 ? ent_data.m_secondary_path : "", ent_fs, err);
+                ent_fs.refresh();
+                assert(fs::exists(ent_fs.symlink_status(err)));
+            }
+            break;
+
         default:
             std::string err_msg{"in dir_entry::unpack_dir, unkown curr_marker.type"};
             debug_log(err_msg);

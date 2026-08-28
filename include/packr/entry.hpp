@@ -58,7 +58,7 @@ struct [[gnu::packed]] dir_entry {
     // Packs a directory by writing its metadata, and children's metadata and data(for files) in a given file(the pack
     // file)
     [[nodiscard]] bool pack_dir(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts,
-                                const u32 nest_count);
+                                const u32 nest_count, anc_map_t& anc_table);
 
     // Unpacks a given directory, by reading data from a pack_file
     [[nodiscard]] static bool unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count);
@@ -67,6 +67,7 @@ struct [[gnu::packed]] dir_entry {
     [[nodiscard]] static bool unpack(File_R& pack_file, const u8 opts);
 };
 
+// This is packed in place of directories which are rejected as they're potentially recursive
 struct [[gnu::packed]] dir_sym_entry {
     dir_sym_entry() = default;
     dir_sym_entry(const std::filesystem::directory_entry& dir);

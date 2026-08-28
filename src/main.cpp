@@ -8,6 +8,10 @@
 #include <string>
 #include <print>
 
+// TODO: std::source_location
+// TODO: contracts
+// TODO: initial tests setup
+
 namespace fs = std::filesystem;
 
 static void print_help();

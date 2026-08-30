@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <sys/stat.h>
 
 namespace packr {
 
@@ -15,7 +16,7 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 [[nodiscard]] extern std::optional<std::string> extract_filename(std::string_view path);
 
-[[nodiscard]] extern u64 get_dir_size(const std::filesystem::directory_entry& dir, const u8 opts);
+[[nodiscard]] extern u64 get_dir_size(const std::filesystem::directory_entry& dir, const u8 opts, anc_map_t& anc_table);
 
 [[nodiscard]] extern bool curate_src_path(std::string& src_path) noexcept;
 
@@ -30,4 +31,6 @@ void debug_log(std::string_view str, const log_type type = log_type::error);
 [[nodiscard]] bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
                                    const ssize_t length);
 
+bool handle_dir_ancestory(const struct ::stat& stat_obj, anc_map_t& anc_table, const std::filesystem::directory_entry& dir,
+                          bool compare_only = false);
 } // namespace packr

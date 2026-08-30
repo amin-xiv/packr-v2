@@ -38,7 +38,7 @@ target_compile_options(packr PRIVATE
 					-Wvla
 					-Wwrite-strings
 					$<$<CONFIG:Release>:-O3>
-					$<$<CONFIG:Debug>:-Og>
+					$<$<CONFIG:Debug>:-O0>
 					$<$<CONFIG:Debug>:-g>
 					$<$<CONFIG:Debug>:-fsanitize=undefined,address>
 )

@@ -7,13 +7,10 @@
 #include <string_view>
 #include <unistd.h>
 #include <cstring>
-#include <cerrno>
 #include <optional>
 #include <string>
-
-#ifndef NDEBUG
+#include <sys/stat.h>
 #include <print>
-#endif
 
 namespace fs = std::filesystem;
 
@@ -58,11 +55,25 @@ std::optional<std::string> extract_filename(std::string_view path) {
     return filename;
 }
 
-u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
-    // dummy error code
+u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_table) {
     std::error_code err;
     const bool sym{(opts & O_SYM) > 0};
     u64 size{};
+
+    struct ::stat stat_obj;
+    int stat_res{::stat(dir.path().c_str(), &stat_obj)};
+
+    if(stat_res == -1) {
+        std::string err_msg{"stat_res returned -1 at get_dir_size  with dir.path(): " + dir.path().string()};
+        debug_log(err_msg);
+        return 0;
+    }
+
+    if(handle_dir_ancestory(stat_obj, anc_table, dir)) {
+        std::string msg{"identified and stopped recursing dir: " + dir.path().string()};
+        debug_log(msg, log_type::info);
+        return 0;
+    }
 
     assert(fs::is_directory(dir.status(err)));
 
@@ -74,13 +85,23 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts) {
 
         if(fs::is_regular_file(ent_sym_status)) {
             size += fs::file_size(ent, err);
+            std::println(stderr, "opts: {}", opts);
+            std::string msg{"file_size: " + std::to_string(fs::file_size(ent)) + " name: " + ent.path().string()};
+            debug_log(msg, log_type::info);
 
         } else if(fs::is_symlink(ent_sym_status) && sym) {
+            std::println(stderr, "opts: {}", opts);
             if(fs::is_regular_file(ent)) {
                 size += fs::directory_entry{fs::canonical(ent, err)}.file_size(err);
+                std::string msg{"(sym)file_size: " + std::to_string(fs::directory_entry{fs::canonical(ent, err)}.file_size(err)) +
+                                " name: " + ent.path().string()};
+                debug_log(msg, log_type::info);
 
-            } else if(fs::is_directory(ent)) {
-                size += get_dir_size(fs::directory_entry{fs::canonical(ent, err), err}, opts);
+            } else if(fs::is_directory(ent, err)) {
+                std::string msg{"starting (sym)dir size recursion: " + fs::canonical(ent).string() +
+                                " with sym path: " + ent.path().string()};
+                debug_log(msg, log_type::info);
+                size += get_dir_size(fs::directory_entry{fs::canonical(ent, err), err}, opts, anc_table);
 
             } // else, ignore special files or symlinks while !sym
         }

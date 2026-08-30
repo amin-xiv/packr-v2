@@ -50,8 +50,10 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
     ASSERT_TRUE(fs::exists(base.symlink_status()));
     ASSERT_TRUE(fs::exists(sample.symlink_status()));
 
+    anc_map_t anc_map1;
+    anc_map_t anc_map2;
     // verify both have the same size before we even start
-    ASSERT_EQ(packr::get_dir_size(base, opts), packr::get_dir_size(sample, opts));
+    ASSERT_EQ(packr::get_dir_size(base, opts, anc_map1), packr::get_dir_size(sample, opts, anc_map2));
 
     for(const fs::directory_entry& entry : std::filesystem::recursive_directory_iterator(base)) {
         std::string entry_relative_path{entry.path()};
@@ -66,7 +68,9 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
 
         } else if(fs::is_directory(entry_sym_stat)) {
             ASSERT_TRUE(fs::is_directory(sample_copy));
-            ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
+            anc_map1.clear();
+            anc_map2.clear();
+            ASSERT_EQ(get_dir_size(entry, opts, anc_map2), get_dir_size(sample_copy, opts, anc_map2));
         } else if(fs::is_symlink(entry_sym_stat)) {
             fs::path entry_canonical{packr::read_symlink(entry)};
 
@@ -77,8 +81,10 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
 
             if(fs::is_directory(entry_canonical)) {
                 if(sym) {
+                    anc_map1.clear();
+                    anc_map2.clear();
                     ASSERT_TRUE(fs::is_directory(sample_copy));
-                    ASSERT_EQ(get_dir_size(entry, opts), get_dir_size(sample_copy, opts));
+                    ASSERT_EQ(get_dir_size(entry, opts, anc_map1), get_dir_size(sample_copy, opts, anc_map2));
 
                 } else {
                     ASSERT_TRUE(fs::is_symlink(sample_copy));

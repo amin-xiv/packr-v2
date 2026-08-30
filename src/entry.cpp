@@ -14,11 +14,11 @@
 #include <unistd.h>
 #include <system_error>
 #include <utility>
+
+#ifndef NDEBUG
 #include <limits>
-
-// TODO: make sure it works with cycle_test/
-
-// BUG: symlink dirs aren't re-symlinked to their targets
+#include <print>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -84,11 +84,13 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 // called at handle_dir_ancestory to initially populate anc_table with the parents of dir
 static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table, bool second_pass = false) {
     // second_pass flag is to denote the second pass on which we populate by ino and dev nums of the canonical path
+#ifndef NDEBUG
     if(second_pass) {
         assert(!anc_table.empty() && "anc_table was empty at populate_with_parents at second_pass");
     } else {
         assert(anc_table.empty() && "anc_table wasn't empty at populate_with_parents");
     }
+#endif
 
     std::error_code err;
     dir = second_pass ? fs::directory_entry{fs::canonical(dir.path(), err)} : fs::directory_entry{fs::absolute(dir.path(), err)};
@@ -98,7 +100,7 @@ static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table,
     while(loop) {
         fs::path curr_parent_path{curr_parent.path()};
         struct stat stat_obj{};
-        int stat_res{stat(curr_parent_path.c_str(), &stat_obj)};
+        [[maybe_unused]] int stat_res{stat(curr_parent_path.c_str(), &stat_obj)};
         assert((stat_res != -1) && "stat returned -1 while handling a fresh anc_table");
 
         const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};

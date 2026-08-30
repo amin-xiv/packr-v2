@@ -16,7 +16,7 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 [[nodiscard]] extern std::optional<std::string> extract_filename(std::string_view path);
 
-[[nodiscard]] extern u64 get_dir_size(const std::filesystem::directory_entry& dir, const u8 opts);
+[[nodiscard]] extern u64 get_dir_size(const std::filesystem::directory_entry& dir, const u8 opts, anc_map_t& anc_table);
 
 [[nodiscard]] extern bool curate_src_path(std::string& src_path) noexcept;
 

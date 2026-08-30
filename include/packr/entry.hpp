@@ -76,11 +76,10 @@ struct [[gnu::packed]] dir_sym_entry {
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
     u64 m_name_length{};
     u64 m_secondary_path_length{};
-    time_spec m_acc_time{};        // last access time
-    time_spec m_mod_time{};        // last modification time
-    time_spec m_sc_time{};         // last status change time
-    u32 m_mode{};                  // permissions
-    entry_class_t m_entry_class{}; // u8
+    time_spec m_acc_time{}; // last access time
+    time_spec m_mod_time{}; // last modification time
+    time_spec m_sc_time{};  // last status change time
+    u32 m_mode{};           // permissions
     bool m_success{false};
 };
 

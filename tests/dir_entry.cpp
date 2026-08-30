@@ -33,7 +33,8 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     ASSERT_EQ(dirEntry.m_success, dir_entry_ret_code::success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);
     EXPECT_EQ(dir_fs.path().filename().string().size(), dirEntry.m_dirname_length);
-    EXPECT_EQ(get_dir_size(dir_fs, opts), dirEntry.m_size);
+    anc_map.clear();
+    EXPECT_EQ(get_dir_size(dir_fs, opts, anc_map), dirEntry.m_size);
     // NOTE: Access time won't be compared for now
     // compare_time_specs(ent_stat.st_atim, dirEntry.m_acc_time);
     // compare_time_specs(ent_stat.st_mtim, dirEntry.m_mod_time);
@@ -41,8 +42,8 @@ TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
     EXPECT_EQ(dirEntry.m_child_entry_count, 5);
     EXPECT_EQ(dirEntry.m_child_file_count, 4);
     EXPECT_EQ(dirEntry.m_child_dir_count, 1);
-    EXPECT_EQ(dirEntry.m_total_entry_count, 12);
-    EXPECT_EQ(dirEntry.m_total_file_count, 9);
+    EXPECT_EQ(dirEntry.m_total_entry_count, 11);
+    EXPECT_EQ(dirEntry.m_total_file_count, 8);
     EXPECT_EQ(dirEntry.m_total_dir_count, 3);
     EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.status().permissions());
     EXPECT_EQ(dirEntry.m_type, dir_type::regular);

@@ -10,6 +10,7 @@ add_executable(unpacking_tests
 	../src/utils.cpp
 	../src/entry.cpp
 	../src/fs_node.cpp
+
 )
 
 add_executable(dir_entry
@@ -30,12 +31,14 @@ add_executable(fs_node
 	./fs_node.cpp
 	../src/fs_node.cpp
 	../src/utils.cpp
+	../src/entry.cpp
 )
 
 add_executable(side_tests
 	./side_tests.cpp
 	../src/utils.cpp
 	../src/fs_node.cpp
+	../src/entry.cpp
 )
 
 add_compile_options(-fsanitize=undefined,address)

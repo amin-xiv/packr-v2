@@ -7,7 +7,7 @@
 namespace packr {
 
 // Represents directories, acts like a DIR*
-class Directory {
+class Directory final {
   public:
     Directory() = delete;
     Directory(const std::filesystem::path& dir_path);
@@ -51,7 +51,7 @@ class File {
 };
 
 // Derrived from 'File' to allow strictly reading from the file
-class File_R : public File {
+class File_R final : public File {
   public:
     using File::File; // Inherits constructor from File class
 
@@ -66,7 +66,7 @@ class File_R : public File {
 };
 
 // Derrived from 'File' to allow strictly writing to the file
-class File_W : public File {
+class File_W final : public File {
   public:
     using File::File; // Inherits constructor from File class
 
@@ -81,7 +81,7 @@ class File_W : public File {
 };
 
 // Used to represent symbolic links(NOT their targets)
-class File_sym {
+class File_sym final {
   public:
     File_sym() = delete;
     File_sym(const std::filesystem::path& file_path);

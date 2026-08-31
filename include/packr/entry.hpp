@@ -11,7 +11,7 @@ namespace packr {
 using anc_map_t = std::unordered_map<std::string, dev_ino_t>;
 
 // This struct would be written into the pack file
-struct [[gnu::packed]] file_entry {
+struct [[gnu::packed]] file_entry final {
     // Constructors
     file_entry() = default;
     file_entry(const std::filesystem::path& file_path, const u8 opts);
@@ -68,7 +68,7 @@ struct [[gnu::packed]] dir_entry {
 };
 
 // This is packed in place of directories which are rejected as they're potentially recursive
-struct [[gnu::packed]] dir_sym_entry {
+struct [[gnu::packed]] dir_sym_entry final {
     dir_sym_entry() = default;
     dir_sym_entry(const std::filesystem::directory_entry& dir);
 
@@ -84,7 +84,7 @@ struct [[gnu::packed]] dir_sym_entry {
 };
 
 // Almost the same as dir_entry, just offers the pack() function and just differentiates regular dirs from pack headers
-struct pack_header : public dir_entry {
+struct pack_header final : public dir_entry {
     // To inherit the constructors from dir_entry
     using dir_entry::dir_entry;
 

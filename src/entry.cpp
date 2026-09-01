@@ -8,7 +8,6 @@
 #include <cassert>
 #include <string>
 #include <sys/stat.h>
-#include <print>
 #include <cstring>
 #include <dirent.h>
 #include <unistd.h>

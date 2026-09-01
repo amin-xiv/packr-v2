@@ -20,17 +20,17 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 [[nodiscard]] extern bool curate_src_path(std::string& src_path) noexcept;
 
-void print_dir_data(const dir_entry& dir_data) noexcept;
+extern void print_dir_data(const dir_entry& dir_data) noexcept;
 
 [[nodiscard]] std::string create_pack_filename(const dir_entry& dir_data);
 
-std::filesystem::path read_symlink(const std::filesystem::path& path);
+[[nodiscard]] extern std::filesystem::path read_symlink(const std::filesystem::path& path);
 
-void debug_log(std::string_view str, const log_type type = log_type::error);
+extern void debug_log(std::string_view str, const log_type type = log_type::error);
 
-[[nodiscard]] bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
-                                   const ssize_t length);
+[[nodiscard]] extern bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
+                                          const ssize_t length);
 
-bool handle_dir_ancestory(const struct ::stat& stat_obj, anc_map_t& anc_table, const std::filesystem::directory_entry& dir,
-                          bool compare_only = false);
+extern bool handle_dir_ancestory(const struct ::stat& stat_obj, anc_map_t& anc_table, const std::filesystem::directory_entry& dir,
+                                 bool compare_only = false);
 } // namespace packr

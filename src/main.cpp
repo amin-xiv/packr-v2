@@ -9,7 +9,7 @@
 #include <print>
 
 // TODO: std::source_location
-// TODO: contracts
+// TODO: contracts -> const cast err into them
 // TODO: initial tests setup
 
 namespace fs = std::filesystem;

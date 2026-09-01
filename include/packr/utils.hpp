@@ -2,10 +2,14 @@
 
 #include <packr/entry.hpp>
 #include <packr/types.hpp>
+#include <packr/macros.hpp>
 #include <filesystem>
 #include <optional>
 #include <string_view>
 #include <sys/stat.h>
+#include <system_error>
+
+static std::error_code err;
 
 namespace packr {
 
@@ -22,9 +26,11 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 extern void print_dir_data(const dir_entry& dir_data) noexcept;
 
-[[nodiscard]] std::string create_pack_filename(const dir_entry& dir_data);
+[[nodiscard]] std::string create_pack_filename(const dir_entry& dir_data) ppre(dir_data.m_dirname_length > 0)
+    ppost(str : !str.empty());
 
-[[nodiscard]] extern std::filesystem::path read_symlink(const std::filesystem::path& path);
+[[nodiscard]] extern std::filesystem::path read_symlink(const std::filesystem::path& path) ppre(!path.empty())
+    ppre(std::filesystem::exists({std::filesystem::directory_entry{path}.symlink_status(const_cast<std::error_code&>(err))}));
 
 extern void debug_log(std::string_view str, const log_type type = log_type::error);
 

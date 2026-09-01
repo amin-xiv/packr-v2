@@ -1,7 +1,8 @@
-#include "packr/types.hpp"
+#include <packr/types.hpp>
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <packr/fs_node.hpp>
+#include <packr/macros.hpp>
 #include <filesystem>
 #include <cassert>
 #include <string_view>
@@ -11,6 +12,10 @@
 #include <string>
 #include <sys/stat.h>
 #include <print>
+
+#ifdef __cpp_contracts
+#include <contracts>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -165,8 +170,6 @@ std::string create_pack_filename(const dir_entry& dir_data) {
 
 fs::path read_symlink(const fs::path& path) {
     std::error_code err;
-    assert(!path.empty() && "Tried to read a symlink of an empty path");
-    assert(fs::exists({fs::directory_entry{path}.symlink_status(err)}) && "Tried to read a symlink of a nonexistent entry");
 
     const fs::path secondary_path{fs::canonical(path, err)};
     // TODO: canonical CAN'T refer to a non-existent file
@@ -229,3 +232,11 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
 }
 
 } // namespace packr
+
+#ifdef __cpp_contracts
+
+void handle_contract_violation(const std::contracts::contract_violation& violation) { // NOTLINT
+    std::println(stderr, "comment: {}", violation.comment());
+}
+
+#endif

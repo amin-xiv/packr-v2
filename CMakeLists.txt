@@ -58,6 +58,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 						-Wstrict-null-sentinel
 						-Wsuggest-attribute=format
 						-Wsuggest-attribute=malloc
+						$<$<CONFIG:Debug>:-fcontract-evaluation-semantic=enforce>
+						$<$<CONFIG:Release>:-fcontract-evaluation-semantic=ignore>
+
 						)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(packr PRIVATE

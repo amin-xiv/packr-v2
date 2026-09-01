@@ -3,6 +3,7 @@
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <packr/misc_structs.hpp>
+#include <packr/macros.hpp>
 #include <filesystem>
 #include <ios>
 #include <cassert>
@@ -83,13 +84,11 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 // called at handle_dir_ancestory to initially populate anc_table with the parents of dir
 static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table, bool second_pass = false) {
     // second_pass flag is to denote the second pass on which we populate by ino and dev nums of the canonical path
-#ifndef NDEBUG
     if(second_pass) {
         assert(!anc_table.empty() && "anc_table was empty at populate_with_parents at second_pass");
     } else {
         assert(anc_table.empty() && "anc_table wasn't empty at populate_with_parents");
     }
-#endif
 
     std::error_code err;
     dir = second_pass ? fs::directory_entry{fs::canonical(dir.path(), err)} : fs::directory_entry{fs::absolute(dir.path(), err)};
@@ -444,7 +443,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
 }
 
 static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_file, const u8 opts,
-                                     std::string_view alt_filename = "") {
+                                     std::string_view alt_filename = "") ppre(!full_path.empty()) {
     // alt_filename is used to name a followed symlink as the name of the symlink rather than target's symlink
     // to preserve dir structure
 

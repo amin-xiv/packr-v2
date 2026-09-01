@@ -19,23 +19,26 @@ env:
 jobs:
   build-debug-gcc:
     runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
 
     steps:
       - uses: actions/checkout@v6
 
       - run: mkdir build
 
-      - name: Update gcc
+      - name: Install GCC dependencies
         run: |
-          sudo apt update
-          sudo apt install -y g++-14
+         dnf install -y gcc-c++ cmake git
+         gcc --version
+         cmake --version
 
       - name: Configure CMake
         run: |
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Debug \
-              -DCMAKE_C_COMPILER=gcc-14 \
-              -DCMAKE_CXX_COMPILER=g++-14
+              -DCMAKE_C_COMPILER=gcc \
+              -DCMAKE_CXX_COMPILER=g++
         working-directory: build
 
       - name: Build executables
@@ -53,6 +56,8 @@ jobs:
       needs: build-debug-gcc
 
       runs-on: ubuntu-latest
+      container:
+       image: fedora:latest
 
       steps:
       - uses: actions/checkout@v6
@@ -82,22 +87,26 @@ jobs:
 
   build-release-gcc:
     runs-on: ubuntu-latest
+    container:
+       image: fedora:latest
 
     steps:
       - uses: actions/checkout@v6
 
       - run: mkdir build
 
-      - run: |
-          sudo apt update
-          sudo apt install -y g++-14
+      - name: Install GCC dependencies
+        run: |
+         dnf install -y gcc-c++ cmake git
+         gcc --version
+         cmake --version
 
       - name: Configure CMake
         run: |
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER=gcc-14 \
-              -DCMAKE_CXX_COMPILER=g++-14
+              -DCMAKE_C_COMPILER=gcc \
+              -DCMAKE_CXX_COMPILER=g++
         working-directory: build
 
       - name: Build executables
@@ -115,6 +124,8 @@ jobs:
       needs: build-release-gcc
 
       runs-on: ubuntu-latest
+      container:
+       image: fedora:latest
 
       steps:
       - uses: actions/checkout@v6
@@ -144,16 +155,19 @@ jobs:
 
   build-debug-clang:
     runs-on: ubuntu-latest
+    container:
+       image: fedora:latest
 
     steps:
       - uses: actions/checkout@v6
 
       - run: mkdir build
 
-      - name: Update clang
+      - name: Install Clang dependencies
         run: |
-          sudo apt update
-          sudo apt install clang
+         dnf install -y clang cmake git
+         clang --version
+         cmake --version
 
       - name: Configure CMake
         run: |
@@ -178,6 +192,8 @@ jobs:
       needs: build-debug-clang
 
       runs-on: ubuntu-latest
+      container:
+       image: fedora:latest
 
       steps:
       - uses: actions/checkout@v6
@@ -207,15 +223,19 @@ jobs:
 
   build-release-clang:
     runs-on: ubuntu-latest
+    container:
+       image: fedora:latest
 
     steps:
       - uses: actions/checkout@v6
 
       - run: mkdir build
 
-      - run: |
-          sudo apt update
-          sudo apt install clang
+      - name: Install Clang dependencies
+        run: |
+         dnf install -y clang cmake git
+         clang --version
+         cmake --version
 
       - name: Configure CMake
         run: |
@@ -240,6 +260,8 @@ jobs:
       needs: build-release-clang
 
       runs-on: ubuntu-latest
+      container:
+       image: fedora:latest
 
       steps:
       - uses: actions/checkout@v6

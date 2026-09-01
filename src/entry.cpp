@@ -13,10 +13,10 @@
 #include <unistd.h>
 #include <system_error>
 #include <utility>
+#include <print>
 
 #ifndef NDEBUG
 #include <limits>
-#include <print>
 #endif
 
 namespace fs = std::filesystem;

@@ -3,6 +3,7 @@
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <packr/misc_structs.hpp>
+
 #include <filesystem>
 #include <ios>
 #include <cassert>
@@ -28,16 +29,14 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
     dir_entry data_inner{entry, nest_count, opts, anc_table};
 
     if(data_inner.m_success == dir_entry_ret_code::fail) {
-        std::string err_msg{"in inc_dir_ent_dir_count, dir_entry.m_success returned false for entry.path(): " +
-                            entry.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("in inc_dir_ent_dir_count, dir_entry.m_success returned false for entry.path(): {}",
+                              entry.path().string()));
         dir.m_success = dir_entry_ret_code::fail;
         return false;
     }
 
     if(data_inner.m_success == dir_entry_ret_code::recursive) {
-        std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
-        debug_log(err_msg, log_type::info);
+        debug_log(std::format("skipped a recursive code path: {}", entry.path().string()), log_type::info);
         // not returning to allow increasing counts as this directory will be packed as a symlink
     }
 
@@ -148,8 +147,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     std::error_code err;
 
     if(!fs::exists(dir.symlink_status(err)) || !fs::is_directory(dir)) {
-        std::string err_msg{"dir_entry constructor, the path " + dir.path().string() + " doesn't exist or is not a directory"};
-        debug_log(err_msg);
+        debug_log(std::format("dir_entry constructor, the path {}  doesn't exist or is not a directory", dir.path().string()));
         m_success = dir_entry_ret_code::fail;
         return;
     }
@@ -166,17 +164,15 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     int stat_res{};
 
     if(!main_dir_obj) {
-        std::string err_msg{"failed to intialize a Directory object at dir_entry constructor, with error message: \n" +
-                            std::string{main_dir_obj.err()}};
-        debug_log(err_msg);
+        debug_log(std::format("failed to intialize a Directory object at dir_entry constructor, with error message: \n{}",
+                              std::string{main_dir_obj.err()}));
         m_success = dir_entry_ret_code::fail;
         return;
     }
 
     if(main_dir_obj.type() == dir_type::symlink) {
         if(main_dir_obj.secondary_path().empty()) {
-            std::string err_msg{"dir symlink " + dir.path().string() + " doesn't have a target"};
-            debug_log(err_msg);
+            debug_log(std::format("dir symlink {} doesn't have a target", dir.path().string()));
             m_success = dir_entry_ret_code::fail;
             return;
         }
@@ -185,8 +181,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     stat_res = stat(dir.path().c_str(), &main_stat);
 
     if(stat_res == -1) {
-        std::string err_msg{"stat_res returned -1 at dir_entry constructor with dir.path(): " + dir.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("stat_res returned -1 at dir_entry constructor with dir.path(): {}", dir.path().string()));
         m_success = dir_entry_ret_code::fail;
         return;
     }
@@ -206,7 +201,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
     for(const fs::directory_entry& entry : fs::directory_iterator(dir, err)) {
         std::string full_path{entry.path().string()};
 
-        packr::debug_log("current entry: " + full_path, log_type::info);
+        debug_log(std::format("current entry: {}", full_path), log_type::info);
 
         fs::file_status ent_sym_status{entry.symlink_status(err)};
 
@@ -216,8 +211,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             stat_res = stat(entry.path().c_str(), &inner_stat);
 
             if(stat_res == -1) {
-                std::string err_msg{"stat_res returned -1 with dir.path(): " + dir.path().string()};
-                debug_log(err_msg);
+                debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
                 m_success = dir_entry_ret_code::fail;
                 return;
             }
@@ -229,7 +223,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             }
 
             if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts, anc_table)) {
-                packr::debug_log("ERROR COLLECTING DIRECTORY DATA: " + full_path);
+                debug_log(std::format("ERROR COLLECTING DIRECTORY DATA: {}", full_path));
             }
 
         } else if(fs::is_regular_file(ent_sym_status)) {
@@ -260,8 +254,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                     stat_res = stat(secondary_entry.path().c_str(), &inner_stat);
 
                     if(stat_res == -1) {
-                        std::string err_msg{"stat_res returned -1 with dir.path(): " + dir.path().string()};
-                        debug_log(err_msg);
+                        debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
                         m_success = dir_entry_ret_code::fail;
                         return;
                     }
@@ -273,14 +266,14 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                     }
 
                     if(!inc_dir_ent_dir_count(*this, entry, nest_count + 1, opts, anc_table)) {
-                        packr::debug_log("ERROR COLLECTING (symlinked)DIRECTORY DATA: " + secondary_path.string());
-                        packr::debug_log("    -> symlinked by: " + full_path, log_type::none);
+                        debug_log(std::format("ERROR COLLECTING (symlinked)DIRECTORY DATA: {}", secondary_path.string()));
+                        debug_log(std::format("    -> symlinked by: {}", full_path), log_type::none);
                     }
                 }
             }
 
         } else {
-            std::println(stderr, "Ignoring a special file: ", entry.path().string());
+            debug_log(std::format("Ignoring a special file: ", entry.path().string()), log_type::notice);
         }
     }
 
@@ -298,9 +291,8 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     File file_obj{file_path};
 
     if(!file_obj) {
-        std::string err_msg{"failed to intialize a File object at file_entry constructor, with error message: \n" +
-                            std::string{file_obj.err()} + " and file_path: " + file_path.string()};
-        debug_log(err_msg);
+        debug_log(format("failed to intialize a File object at file_entry constructor, with error message: \n{}",
+                         std::string{file_obj.err()} + " and file_path: " + file_path.string()));
         m_success = false;
         return;
     }
@@ -326,8 +318,7 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     assert(stat_res != -1);
     // TEST: case
     if(stat_res == -1) {
-        std::string err_msg{"stat_res returned -1 at file_entry constructor with file_path: " + file_path.string()};
-        debug_log(err_msg);
+        debug_log(std::format("stat_res returned -1 at file_entry constructor with file_path: {}", file_path.string()));
         m_success = false;
         return;
     }
@@ -338,9 +329,8 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     if((follow_symlinks && symlink_target_exists) || file_obj.type() != file_type::symlink) {
         m_size = static_cast<ssize_t>(fs::file_size(file_path, err));
         if(err) { // i.e. if err.value() > 0
-            std::string err_msg{"in file_entry constructor with path " + file_path.string() +
-                                ", fs::file_size.err() was greater than zero"};
-            debug_log(err_msg);
+            debug_log(
+                format("in file_entry constructor with path {}, fs::file_size.err() was greater than zero", file_path.string()));
             m_success = false;
             return;
         }
@@ -375,9 +365,9 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
         const fs::path& symlink_path{dir.path()}; // the actual target symlink to pack
 
         if(!file_obj) {
-            std::string err_msg{"failed to intialize a File object at dir_sym_entry constructor, with error message: \n" +
-                                std::string{file_obj.err()} + " and symlink_path: " + dir.path().string()};
-            debug_log(err_msg);
+            debug_log(std::format(
+                "failed to intialize a File object at dir_sym_entry constructor, with error message: \n{} and symlink_path: {}",
+                std::string{file_obj.err()}, dir.path().string()));
             m_success = false;
             return;
         }
@@ -387,8 +377,8 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
 
         assert(stat_res != -1);
         if(stat_res == -1) {
-            std::string err_msg{"stat_res returned -1 at dir_sym_entry constructor with symlink_path: " + symlink_path.string()};
-            debug_log(err_msg);
+            debug_log(
+                std::format("stat_res returned -1 at dir_sym_entry constructor with symlink_path: {}", symlink_path.string()));
             m_success = false;
             return;
         }
@@ -419,8 +409,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
 
         assert(stat_res != -1);
         if(stat_res == -1) {
-            std::string err_msg{"stat_res returned -1 at dir_sym_entry with dir.path(): " + dir_path.string()};
-            debug_log(err_msg);
+            debug_log(std::format("stat_res returned -1 at dir_sym_entry with dir.path(): {}", dir_path.string()));
             m_success = false;
             return;
         }
@@ -451,9 +440,8 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
     file_entry file_data{full_path, opts};
 
     if(!file_data.m_success) {
-        std::string err_msg{"in pack_handle_regular_file, file_data.m_success was false with full_path: " +
-                            std::string{full_path}};
-        debug_log(err_msg);
+        debug_log(
+            std::format("in pack_handle_regular_file, file_data.m_success was false with full_path: {}", std::string{full_path}));
         return false;
     }
 
@@ -466,14 +454,14 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
 
     special_marker file_marker = {.type = ENT_FILE};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
-        std::string err_msg{"in pack_handle_regular_file, pack_file.write() failed with file_path: " + std::string{full_path}};
-        debug_log(err_msg);
+        debug_log(
+            std::format("in pack_handle_regular_file, pack_file.write() failed with file_path: {}", std::string{full_path}));
         return false;
     }
 
     if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
-        std::string err_msg{"in pack_handle_regular_file, pack_file.write() failed with file_path: " + std::string{full_path}};
-        debug_log(err_msg);
+        debug_log(
+            std::format("in pack_handle_regular_file, pack_file.write() failed with file_path: {}", std::string{full_path}));
         return false;
     }
 
@@ -481,16 +469,15 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
     if(file_data.m_size > 0) {
         File_R file_stream{full_path};
         if(!file_stream) {
-            std::string err_msg{"in pack_handle_regular_file, file_stream's constructor failed with full_path: " +
-                                std::string{full_path} + " and m_error_message: " + std::string{file_stream.err()}};
-            debug_log(err_msg);
+            debug_log(std::format(
+                "in pack_handle_regular_file, file_stream's constructor failed with full_path: {} and m_error_message: {}",
+                std::string{full_path}, std::string{file_stream.err()}));
             return false;
         }
 
         if(!file_stream.setup_stream(open_type::exists)) {
-            std::string err_msg{"in pack_handle_regular_file, file_stream.setup_stream() failed with file_path: " +
-                                std::string{full_path}};
-            debug_log(err_msg);
+            debug_log(std::format("in pack_handle_regular_file, file_stream.setup_stream() failed with file_path: {}",
+                                  std::string{full_path}));
             return false;
         }
 
@@ -501,8 +488,7 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
         assert(copy_res);
 
         if(!copy_res) {
-            std::string err_msg{"failed to copy files in pack_handle_regular_file"};
-            debug_log(err_msg);
+            debug_log("failed to copy files in pack_handle_regular_file");
         }
     }
 
@@ -518,14 +504,12 @@ static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_fil
 
     special_marker file_marker = {.type = ENT_DIR_SYM};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
-        std::string err_msg{"in pack_dir_as_symlink, pack_file.write() failed with target path: " + dir.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("in pack_dir_as_symlink, pack_file.write() failed with target path: {}", dir.path().string()));
         return false;
     }
 
     if(!pack_file.write(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
-        std::string err_msg{"in pack_dir_as_symlink, pack_file.write() failed with target path: " + dir.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("in pack_dir_as_symlink, pack_file.write() failed with target path: {}", dir.path().string()));
         return false;
     }
 
@@ -536,8 +520,8 @@ static bool pack_handle_dir(const fs::directory_entry& entry, File_W& pack_file,
                             anc_map_t& anc_table) {
     dir_entry dir_data{entry, nest_count, opts, anc_table};
     if(dir_data.m_success == dir_entry_ret_code::fail) {
-        std::string err_msg{"in pack_handle_dir, dir_data_inner.m_success failed with entry.path(): " + entry.path().string()};
-        debug_log(err_msg);
+        debug_log(
+            std::format("in pack_handle_dir, dir_data_inner.m_success failed with entry.path(): {}", entry.path().string()));
         return false;
     }
 
@@ -545,14 +529,13 @@ static bool pack_handle_dir(const fs::directory_entry& entry, File_W& pack_file,
         [[maybe_unused]] bool res{pack_dir_as_symlink(entry, pack_file)};
         assert(res && "pack_dir_as_symlink failed in pack_handle_dir");
 
-        std::string err_msg{"skipped a recursive code path: " + entry.path().string()};
-        debug_log(err_msg, log_type::info);
+        debug_log(std::format("skipped a recursive code path: ", entry.path().string()), log_type::info);
         return true;
     }
 
     if(!dir_data.pack_dir(entry, pack_file, opts, nest_count + 1, anc_table)) {
-        std::string err_msg{"in pack_handle_dir, dir_data_inner.pack_dir() failed with entry.path(): " + entry.path().string()};
-        debug_log(err_msg);
+        debug_log(
+            std::format("in pack_handle_dir, dir_data_inner.pack_dir() failed with entry.path(): {}", entry.path().string()));
         return false;
     }
 
@@ -565,14 +548,12 @@ static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const 
 
     special_marker file_marker = {.type = ENT_FILE};
     if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
-        std::string err_msg{"in pack_a_symlink, pack_file.write() failed with full_path: " + std::string{full_path}};
-        debug_log(err_msg);
+        debug_log(std::format("in pack_a_symlink, pack_file.write() failed with full_path: {}", std::string{full_path}));
         return false;
     }
 
     if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
-        std::string err_msg{"in pack_a_symlink, pack_file.write() failed with full_path: " + std::string{full_path}};
-        debug_log(err_msg);
+        debug_log(std::format("in pack_a_symlink, pack_file.write() failed with full_path: {}", std::string{full_path}));
         return false;
     }
 
@@ -590,8 +571,7 @@ static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const 
         bool copy_res{packr::copy_file_range(file_stream, 0, pack_file, pack_file_offset, file_data.m_size)};
 
         if(!copy_res) {
-            std::string err_msg{"failed to copy files in pack_a_symlink"};
-            debug_log(err_msg);
+            debug_log("failed to copy files in pack_a_symlink");
         }
         assert(copy_res);
     }
@@ -656,8 +636,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     int stat_res{stat(dir.path().c_str(), &main_stat)};
 
     if(stat_res == -1) {
-        std::string err_msg{"stat_res returned -1 at dir_entry::pack_dir with dir.path(): " + dir.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("stat_res returned -1 at dir_entry::pack_dir with dir.path(): {}", dir.path().string()));
         m_success = dir_entry_ret_code::fail;
         return false;
     }
@@ -669,7 +648,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     for(const fs::directory_entry& curr_ent : fs::directory_iterator(dir, err)) {
         const std::string full_path{curr_ent.path().string()};
 
-        packr::debug_log("current entry to pack: " + full_path, log_type::info);
+        debug_log(std::format("current entry to pack: {}", full_path), log_type::info);
 
         const fs::file_status ent_sym_status{curr_ent.symlink_status(err)};
 
@@ -740,8 +719,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             {
                 file_entry curr_file_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_file_data), sizeof(file_entry))) {
-                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
-                    debug_log(err_msg);
+                    debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
 
@@ -761,10 +739,9 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 // The rest is for regular files
                 File_W target_file{curr_file_data.m_filename};
                 if(!target_file.setup_stream(open_type::fresh)) {
-                    std::string err_msg{
-                        "in dir_entry::unpack_dir, target_file.setup_stream() failed with curr_file_data.m_filename: " +
-                        std::string{curr_file_data.m_filename}};
-                    debug_log(err_msg);
+                    debug_log(std::format(
+                        "in dir_entry::unpack_dir, target_file.setup_stream() failed with curr_file_data.m_filename: {}",
+                        std::string{curr_file_data.m_filename}));
                     return false;
                 }
 
@@ -776,8 +753,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                     assert(copy_res);
 
                     if(!copy_res) {
-                        std::string err_msg{"failed to copy files in unpack_dir"};
-                        debug_log(err_msg);
+                        debug_log("failed to copy files in unpack_dir");
                     }
                 }
             }
@@ -787,52 +763,48 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             {
                 dir_entry curr_dir_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&curr_dir_data), sizeof(dir_entry))) {
-                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
-                    debug_log(err_msg);
+                    debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
 
                 if(mkdir(curr_dir_data.m_dirname, curr_dir_data.m_mode) == -1) {
-                    std::string err_msg{"in dir_entry::unpack_dir, mkdir failed with curr_dir_data.m_dirname: " +
-                                        std::string{curr_dir_data.m_dirname}};
-                    debug_log(err_msg);
+                    debug_log(std::format("in dir_entry::unpack_dir, mkdir failed with curr_dir_data.m_dirname: {}",
+                                          std::string{curr_dir_data.m_dirname}));
                     return false;
                 }
                 char* cwd{getcwd(nullptr, 0)};
                 if(cwd == nullptr) {
-                    std::string err_msg{"in dir_entry::unpack_dir, getcwd failed"};
-                    debug_log(err_msg);
+                    debug_log("in dir_entry::unpack_dir, getcwd failed");
                     return false;
                 }
                 // The path of the newely created directory
                 std::optional<std::string> target_dir_path{join_to_path(curr_dir_data.m_dirname, cwd)};
                 if(!target_dir_path) {
-                    std::string err_msg{"in dir_entry::unpack_dir, join_to_path failed with curr_dir_data.m_dirname: " +
-                                        std::string{curr_dir_data.m_dirname} + " and cwd: " + std::string{cwd}};
-                    debug_log(err_msg);
+                    debug_log(
+                        std::format("in dir_entry::unpack_dir, join_to_path failed with curr_dir_data.m_dirname: {} and cwd: {}",
+                                    std::string{curr_dir_data.m_dirname}, std::string{cwd}));
                     free(cwd);
                     return false;
                 }
 
                 std::string& target_dir_path_str{target_dir_path.value()};
                 if(chdir(target_dir_path_str.data()) == -1) {
-                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with target_dir_path: " + target_dir_path_str};
-                    debug_log(err_msg);
+                    debug_log(
+                        std::format("in dir_entry::unpack_dir, chdir failed with target_dir_path: {}", target_dir_path_str));
                     free(cwd);
                     return false;
                 }
 
                 if(!unpack_dir(pack_file, opts, nest_count + 1)) {
-                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with target_dir_path: " + target_dir_path_str};
-                    debug_log(err_msg);
+                    debug_log(
+                        std::format("in dir_entry::unpack_dir, chdir failed with target_dir_path: {}", target_dir_path_str));
                     free(cwd);
                     return false;
                 }
 
                 // Return to curr after unpacking the sub dir
                 if(chdir(cwd) == -1) {
-                    std::string err_msg{"in dir_entry::unpack_dir, chdir failed with cwd: " + std::string{cwd}};
-                    debug_log(err_msg);
+                    debug_log(std::format("in dir_entry::unpack_dir, chdir failed with cwd: {}", std::string{cwd}));
                     free(cwd);
                     return false;
                 }
@@ -849,8 +821,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             {
                 dir_sym_entry ent_data;
                 if(!pack_file.read(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
-                    std::string err_msg{"in dir_entry::unpack_dir, pack_file.read() failed"};
-                    debug_log(err_msg);
+                    debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
 
@@ -864,8 +835,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
             break;
 
         default:
-            std::string err_msg{"in dir_entry::unpack_dir, unkown curr_marker.type"};
-            debug_log(err_msg);
+            debug_log("in dir_entry::unpack_dir, unkown curr_marker.type");
             return false;
             break;
         }
@@ -878,28 +848,24 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     // Reading PACK_START
     special_marker pack_start_marker;
     if(!pack_file.read(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
-        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
     if(pack_start_marker.type != PACK_START) {
-        std::string err_msg{"in dir_entry::unpack, didn't find PACK_STARTER marker"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, didn't find PACK_STARTER marker");
         return false;
     }
 
     u8 pack_file_opts{};
     if(!pack_file.read(reinterpret_cast<char*>(&pack_file_opts), sizeof(opts))) {
-        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
 
     // Reading pack_header
     dir_entry pack_header;
     if(!pack_file.read(reinterpret_cast<char*>(&pack_header), sizeof(dir_entry))) {
-        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
 
@@ -907,51 +873,44 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     special_marker initial_dir_start_marker;
     if(!pack_file.read(reinterpret_cast<char*>(&initial_dir_start_marker),
                        static_cast<std::streamsize>(sizeof(special_marker)))) {
-        std::string err_msg{"in dir_entry::unpack, pack_file.read() failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
     if(initial_dir_start_marker.type != ENT_DIR_START) {
-        std::string err_msg{"in dir_entry::unpack, initial_dir_start_marker.type wasn't ENT_DIR_START"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, initial_dir_start_marker.type wasn't ENT_DIR_START");
         return false;
     }
 
     // Making the root directory and changing into it
     if(mkdir(pack_header.m_dirname, pack_header.m_mode) == -1) {
         if(errno != EEXIST) {
-            std::string err_msg{
-                "in dir_entry::unpack, mkdir failed with an errno other than EEXIST, with pack_header.m_dirname " +
-                std::string{pack_header.m_dirname} + " and pack_header.m_mode: " + std::to_string(pack_header.m_mode)};
-            debug_log(err_msg);
+            debug_log(std::format("in dir_entry::unpack, mkdir failed with an errno other than EEXIST, with "
+                                  "pack_header.m_dirname {} and pack_header.m_mode: {}",
+                                  std::string{pack_header.m_dirname}, std::to_string(pack_header.m_mode)));
             return false;
         }
     }
     char* cwd = getcwd(nullptr, 0);
     if(cwd == nullptr) {
-        std::string err_msg{"in dir_entry::unpack, getcwd failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, getcwd failed");
         return false;
     }
     std::optional<std::string> root_dir_path{join_to_path(pack_header.m_dirname, cwd)};
     if(!root_dir_path) {
-        std::string err_msg{"in dir_entry::unpack, join_to_path failed with pack_header.m_dirname: " +
-                            std::string{pack_header.m_dirname} + " and cwd: " + std::string{cwd}};
-        debug_log(err_msg);
+        debug_log(std::format("in dir_entry::unpack, join_to_path failed with pack_header.m_dirname: {} and cwd: {}",
+                              std::string{pack_header.m_dirname}, std::string{cwd}));
         return false;
     }
 
     std::string& root_dir_path_str{root_dir_path.value()};
     if(chdir(root_dir_path_str.data()) == -1) {
-        std::string err_msg{"in dir_entry::unpack, chdir failed with root_dir_path_str: " + root_dir_path_str};
-        debug_log(err_msg);
+        debug_log(std::format("in dir_entry::unpack, chdir failed with root_dir_path_str: {}", root_dir_path_str));
         free(cwd);
         return false;
     }
 
     if(!unpack_dir(pack_file, 0, DEFAULT_ROOT_DIR)) {
-        std::string err_msg{"in dir_entry::unpack, unpack_dir failed"};
-        debug_log(err_msg);
+        debug_log("in dir_entry::unpack, unpack_dir failed");
         free(cwd);
         return false;
     }

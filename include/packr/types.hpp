@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <istream>
 
@@ -65,7 +66,8 @@ enum class log_type : u8 {
     error,
     warning,
     info,
-    none,
+    notice,
+    none
 };
 
 enum class dir_entry_ret_code : u8 {

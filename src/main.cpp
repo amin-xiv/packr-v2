@@ -2,6 +2,7 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <packr/fs_node.hpp>
+
 #include <filesystem>
 #include <cstring>
 #include <getopt.h>
@@ -9,7 +10,6 @@
 #include <print>
 
 // TODO: std::source_location
-// TODO: contracts
 // TODO: initial tests setup
 
 namespace fs = std::filesystem;

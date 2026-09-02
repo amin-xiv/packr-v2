@@ -1,4 +1,5 @@
 #pragma once
+
 #include <packr/types.hpp>
 
 namespace packr {

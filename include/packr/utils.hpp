@@ -2,6 +2,7 @@
 
 #include <packr/entry.hpp>
 #include <packr/types.hpp>
+
 #include <filesystem>
 #include <optional>
 #include <string_view>
@@ -20,7 +21,7 @@ extern void add_dirname(dir_entry* dir_ent, std::string named_as, const std::str
 
 [[nodiscard]] extern bool curate_src_path(std::string& src_path) noexcept;
 
-extern void print_dir_data(const dir_entry& dir_data) noexcept;
+extern void print_dir_data(const dir_entry& dir_data);
 
 [[nodiscard]] std::string create_pack_filename(const dir_entry& dir_data);
 

@@ -2,8 +2,10 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <packr/fs_node.hpp>
+
 #include <filesystem>
 #include <cassert>
+#include <stdexcept>
 #include <string_view>
 #include <unistd.h>
 #include <cstring>
@@ -11,6 +13,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <print>
+#include <format>
 
 namespace fs = std::filesystem;
 
@@ -64,14 +67,12 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_t
     int stat_res{::stat(dir.path().c_str(), &stat_obj)};
 
     if(stat_res == -1) {
-        std::string err_msg{"stat_res returned -1 at get_dir_size  with dir.path(): " + dir.path().string()};
-        debug_log(err_msg);
+        debug_log(std::format("stat_res returned -1 at get_dir_size  with dir.path(): {}", dir.path().string()));
         return 0;
     }
 
     if(handle_dir_ancestory(stat_obj, anc_table, dir)) {
-        std::string msg{"identified and stopped recursing dir: " + dir.path().string()};
-        debug_log(msg, log_type::info);
+        debug_log(std::format("identified and stopped recursing dir: {}", dir.path().string()), log_type::info);
         return 0;
     }
 
@@ -110,31 +111,40 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_t
     return size;
 }
 
-void print_dir_data(const dir_entry& dir_data) noexcept {
+void print_dir_data(const dir_entry& dir_data) {
     // Integers are casted to their types since the struct dir_entry is packed
 
-    debug_log("dir name: " + std::string{static_cast<const char*>(dir_data.m_dirname)}, log_type::info);
-    debug_log("dir name length: " + std::to_string(static_cast<packr::u16>(dir_data.m_dirname_length)), log_type::info);
-    debug_log("dir size is: " + std::to_string(static_cast<packr::u64>(dir_data.m_size)), log_type::info);
-
-    debug_log("total_dir_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_dir_count)), log_type::info);
-    debug_log("total_file_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_file_count)), log_type::info);
-    debug_log("total_entry_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_total_entry_count)), log_type::info);
-
-    debug_log("child_dir_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_dir_count)), log_type::info);
-    debug_log("child_file_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_file_count)), log_type::info);
-    debug_log("child_entry_count: " + std::to_string(static_cast<packr::u64>(dir_data.m_child_entry_count)), log_type::info);
-
-    debug_log("last access time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.sec)) +
-                  std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.nsec)),
+    debug_log(std::format("dir name: {}", std::string{static_cast<const char*>(dir_data.m_dirname)}), log_type::info);
+    debug_log(std::format("dir name length: {}", std::to_string(static_cast<packr::u16>(dir_data.m_dirname_length))),
               log_type::info);
-    debug_log("last modification time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.sec)) +
-                  std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.nsec)),
+    debug_log(std::format("dir size is: {}", std::to_string(static_cast<packr::u64>(dir_data.m_size))), log_type::info);
+
+    debug_log(std::format("total_dir_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_dir_count))),
               log_type::info);
-    debug_log("last last status change time: sec: , nsec: " + std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.sec)) +
-                  std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.nsec)),
+    debug_log(std::format("total_file_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_file_count))),
               log_type::info);
-    debug_log("mode: " + std::to_string(static_cast<packr::u64>(dir_data.m_mode)), log_type::info);
+    debug_log(std::format("total_entry_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_entry_count))),
+              log_type::info);
+
+    debug_log(std::format("child_dir_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_dir_count))),
+              log_type::info);
+    debug_log(std::format("child_file_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_file_count))),
+              log_type::info);
+    debug_log(std::format("child_entry_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_entry_count))),
+              log_type::info);
+
+    debug_log(std::format("last access time: sec: {}, nsec: {}", std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.sec)),
+                          std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.nsec))),
+              log_type::info);
+    debug_log(std::format("last modification time: sec: {}, nsec: {}",
+                          std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.sec)),
+                          std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.nsec))),
+              log_type::info);
+    debug_log(std::format("last last status change time: sec: {}, nsec: {}",
+                          std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.sec)),
+                          std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.nsec))),
+              log_type::info);
+    debug_log(std::format("mode: {}", std::to_string(static_cast<packr::u64>(dir_data.m_mode))), log_type::info);
 }
 
 bool curate_src_path(std::string& src_path) noexcept {
@@ -182,19 +192,34 @@ fs::path read_symlink(const fs::path& path) {
 
 void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log_type type) {
     // type is by default log_type::error;
+
 #ifndef NDEBUG
     using enum log_type;
+
     std::string type_str{};
-    if(type == error) {
+    switch(type) {
+    case error:
         type_str = "ERROR";
+        break;
 
-    } else if(type == warning) {
+    case warning:
         type_str = "WARNING";
+        break;
 
-    } else if(type == info) {
+    case info:
         type_str = "INFO";
-    } else { // log_type::none
+        break;
+
+    case notice:
+        type_str = "NOTICE";
+        break;
+
+    case none:
         type_str = "";
+        break;
+
+    default:
+        throw std::runtime_error(std::format("unknown log_type was passed to debug_log"));
     }
 
     std::println(stderr, "[{}]: {}", type_str, str);
@@ -220,8 +245,7 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
     assert(copy_res != -1);
 
     if(copy_res == -1) {
-        std::string err_msg{"copy_file_range failed, dest_fd: " + std::to_string(dest_fd) + ", out_fd:" + std::to_string(out_fd)};
-        debug_log(err_msg);
+        debug_log(std::format("copy_file_range failed, dest_fd: {}, out_fd:{}", std::to_string(dest_fd), std::to_string(out_fd)));
         return false;
     }
 

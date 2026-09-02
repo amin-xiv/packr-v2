@@ -4,5 +4,6 @@ Checks: |-
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -bugprone-easily-swappable-parameters, -modernize-avoid-c-arrays,
-  -readability-avoid-const-params-in-decls
+  -readability-avoid-const-params-in-decls,
+  -Wcovered-switch-default
 ...

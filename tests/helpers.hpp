@@ -98,8 +98,7 @@ void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::d
                     ASSERT_TRUE(fs::is_symlink(sample_copy));
                 }
             } else {
-                std::string err_msg{"Potentially found a special file: " + entry.path().string()};
-                throw std::runtime_error(err_msg);
+                throw std::runtime_error(std::format("Potentially found a special file: {}", entry.path().string()));
             }
         }
     }

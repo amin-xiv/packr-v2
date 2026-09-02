@@ -37,6 +37,7 @@ target_compile_options(packr PRIVATE
 					-Wuninitialized
 					-Wvla
 					-Wwrite-strings
+					-Wno-covered-switch-default
 					$<$<CONFIG:Release>:-O3>
 					$<$<CONFIG:Debug>:-O0>
 					$<$<CONFIG:Debug>:-g>

@@ -37,7 +37,6 @@ target_compile_options(packr PRIVATE
 					-Wuninitialized
 					-Wvla
 					-Wwrite-strings
-					-Wno-covered-switch-default
 					$<$<CONFIG:Release>:-O3>
 					$<$<CONFIG:Debug>:-O0>
 					$<$<CONFIG:Debug>:-g>
@@ -64,6 +63,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(packr PRIVATE
 						-Wcovered-switch-default
 						-Wextra-semi-stmt
+						-Wno-covered-switch-default
 )
 endif()
 

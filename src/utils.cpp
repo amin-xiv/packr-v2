@@ -72,7 +72,7 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_t
     }
 
     if(handle_dir_ancestory(stat_obj, anc_table, dir)) {
-        debug_log(std::format("identified and stopped recursing dir: {}", dir.path().string()), log_type::info);
+        debug_log(std::format("identified and stopped recursing dir: {}", dir.path().string()), log_type::notice);
         return 0;
     }
 

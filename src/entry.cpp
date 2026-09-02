@@ -36,7 +36,7 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
     }
 
     if(data_inner.m_success == dir_entry_ret_code::recursive) {
-        debug_log(std::format("skipped a recursive code path: {}", entry.path().string()), log_type::info);
+        debug_log(std::format("skipped a recursive code path: {}", entry.path().string()), log_type::notice);
         // not returning to allow increasing counts as this directory will be packed as a symlink
     }
 
@@ -273,7 +273,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
             }
 
         } else {
-            debug_log(std::format("Ignoring a special file: ", entry.path().string()), log_type::notice);
+            debug_log(std::format("Ignoring a special file: {}", entry.path().string()), log_type::notice);
         }
     }
 
@@ -291,8 +291,10 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     File file_obj{file_path};
 
     if(!file_obj) {
-        debug_log(format("failed to intialize a File object at file_entry constructor, with error message: \n{}",
-                         std::string{file_obj.err()} + " and file_path: " + file_path.string()));
+        debug_log(
+            format("failed to intialize a File object at file_entry constructor, with error message: \n{} and file_path: {}",
+                   file_obj.err(), file_path.string()));
+
         m_success = false;
         return;
     }
@@ -529,7 +531,7 @@ static bool pack_handle_dir(const fs::directory_entry& entry, File_W& pack_file,
         [[maybe_unused]] bool res{pack_dir_as_symlink(entry, pack_file)};
         assert(res && "pack_dir_as_symlink failed in pack_handle_dir");
 
-        debug_log(std::format("skipped a recursive code path: ", entry.path().string()), log_type::info);
+        debug_log(std::format("skipped a recursive code path: {}", entry.path().string()), log_type::notice);
         return true;
     }
 

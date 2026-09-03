@@ -9,12 +9,7 @@ env:
     pwd && ls -R &&
     chmod +x
     ./packr
-    ./tests/packing_tests
-    ./tests/side_tests
-    ./tests/unpacking_tests
-    ./tests/dir_entry
-    ./tests/file_entry
-    ./tests/fs_node
+    ./tests/main_tests
 
 jobs:
   build-debug-gcc:

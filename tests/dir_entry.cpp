@@ -6,29 +6,27 @@
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
-#include <optional>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <filesystem>
 
 using namespace packr;
 
-TEST_F(dirAndFileEntryConstructorData, DirectoryEntryConstructorData) {
+TEST_F(packingAndUnpackingTestdata, DirectoryEntryConstructorData) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{0};
-
     // fs directory intialization
-    fs::directory_entry dir_fs{full_path.value()};
+    fs::directory_entry dir_fs{dummy_dir1_name};
     ASSERT_TRUE(fs::is_directory(dir_fs));
 
     // dir_entry initialization
     anc_map_t anc_map{};
-    dir_entry dirEntry{fs::directory_entry{joined}, DEFAULT_ROOT_DIR, opts, anc_map};
+    dir_entry dirEntry{fs::directory_entry{dummy_dir1_name}, DEFAULT_ROOT_DIR, opts, anc_map};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(stat(full_path.value().data(), &ent_stat) == -1);
+    ASSERT_FALSE(stat(dummy_dir1_name.data(), &ent_stat) == -1);
 
     ASSERT_EQ(dirEntry.m_success, dir_entry_ret_code::success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);

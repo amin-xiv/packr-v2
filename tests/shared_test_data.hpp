@@ -4,20 +4,6 @@
 
 namespace fs = std::filesystem;
 
-class dirAndFileEntryConstructorData : public testing::Test {
-  protected:
-    dirAndFileEntryConstructorData()
-        : cwd_path(fs::current_path()), cwd_str(cwd_path.string()), dir_name("dummy_dir1"),
-          full_path(packr::join_to_path(dir_name, cwd_str)), joined(cwd_str + '/' + dir_name) {
-    }
-
-    fs::path cwd_path;
-    std::string cwd_str;
-    std::string dir_name;
-    std::optional<std::string> full_path;
-    std::string joined;
-};
-
 class packingAndUnpackingTestdata : public testing::Test {
   protected:
     // dummer error code to avoid exceptions

@@ -11,6 +11,7 @@
 
 // TODO: std::source_location
 // TODO: initial tests setup
+// TODO: make surefull path <optional> thingy has tests
 
 namespace fs = std::filesystem;
 

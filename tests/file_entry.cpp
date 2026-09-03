@@ -11,13 +11,13 @@
 
 using namespace packr;
 
-TEST_F(dirAndFileEntryConstructorData, FileEntryBasic) {
+TEST_F(packingAndUnpackingTestdata, FileEntryBasic) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{};
 
     // fs directory intialization
-    fs::directory_entry file_fs{std::string{full_path.value() + '/' + "hallo.txt"}};
+    fs::directory_entry file_fs{std::string{dummy_dir1_name + '/' + "hallo.txt"}};
     ASSERT_TRUE(file_fs.exists()) << file_fs.path().string();
 
     // dir_entry initialization
@@ -39,7 +39,7 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryBasic) {
     EXPECT_EQ(fileEntry.m_type, file_type::regular);
 }
 
-TEST_F(dirAndFileEntryConstructorData, FileEntrySymlink) {
+TEST_F(packingAndUnpackingTestdata, FileEntrySymlink) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{O_SYM};
@@ -47,8 +47,8 @@ TEST_F(dirAndFileEntryConstructorData, FileEntrySymlink) {
     fs::directory_entry file_fs;
 
     bool valid{};
-    if(fs::directory_entry{full_path.value()}.is_symlink(err)) {
-        fs::path original_dir_path{fs::read_symlink(full_path.value(), err)};
+    if(fs::directory_entry{dummy_dir1_name}.is_symlink(err)) {
+        fs::path original_dir_path{fs::read_symlink(dummy_dir1_name, err)};
         ASSERT_FALSE(original_dir_path.empty());
         file_fs = fs::directory_entry{original_dir_path.string() + '/' + "sym_file"};
         valid = true;
@@ -78,7 +78,7 @@ TEST_F(dirAndFileEntryConstructorData, FileEntrySymlink) {
     EXPECT_EQ(fileEntry.m_type, file_type::symlink);
 }
 
-TEST_F(dirAndFileEntryConstructorData, FileEntryBrokenSymlink) {
+TEST_F(packingAndUnpackingTestdata, FileEntryBrokenSymlink) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{O_SYM};
@@ -86,8 +86,8 @@ TEST_F(dirAndFileEntryConstructorData, FileEntryBrokenSymlink) {
     fs::directory_entry file_fs;
 
     bool valid{};
-    if(fs::directory_entry{full_path.value()}.is_symlink(err)) {
-        fs::path original_dir_path{fs::read_symlink(full_path.value(), err)};
+    if(fs::directory_entry{dummy_dir1_name}.is_symlink(err)) {
+        fs::path original_dir_path{fs::read_symlink(dummy_dir1_name, err)};
         ASSERT_FALSE(original_dir_path.empty());
         file_fs = fs::directory_entry{original_dir_path.string() + '/' + "broken_symlink_file"};
         valid = true;

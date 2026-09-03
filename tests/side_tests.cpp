@@ -5,7 +5,7 @@
 
 using namespace packr;
 
-TEST_F(dirAndFileEntryConstructorData, joinToPathNormal) {
+TEST_F(packingAndUnpackingTestdata, joinToPathNormal) {
     // First test
     std::string filename1{"file.txt"};
     std::string directory{"/home/user/desktop/directory"};
@@ -30,15 +30,10 @@ TEST_F(dirAndFileEntryConstructorData, joinToPathNormal) {
     fs::path cwd_path{fs::current_path()};
     std::string cwd_str{cwd_path.string()};
 
-    // This time a real directory is used, this will be passed on to other tests
     std::string file_name{"hallo.txt"};
     std::optional<std::string> full_path4{join_to_path(file_name, cwd_str)};
     std::string joined4{cwd_str + '/' + file_name};
     EXPECT_EQ(joined4, full_path4.value());
-
-    // This time a real directory is used, this will be passed on to other tests
-    // This is from the text fixture passed in the first param
-    EXPECT_EQ(joined, full_path.value());
 }
 
 TEST(joinToPath, nullInputs) {

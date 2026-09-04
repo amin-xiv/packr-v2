@@ -5,7 +5,7 @@
 
 using namespace packr;
 
-TEST_F(packingAndUnpackingTestdata, joinToPathNormal) {
+TEST_F(packingAndUnpackingFixture, joinToPathNormal) {
     // First test
     std::string filename1{"file.txt"};
     std::string directory{"/home/user/desktop/directory"};

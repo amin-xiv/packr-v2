@@ -4,7 +4,7 @@
 
 namespace fs = std::filesystem;
 
-class packingAndUnpackingTestdata : public testing::Test {
+class packingAndUnpackingFixture : public testing::Test {
   protected:
     // dummer error code to avoid exceptions
     inline static std::error_code err;
@@ -16,6 +16,4 @@ class packingAndUnpackingTestdata : public testing::Test {
     const inline static std::string dummy_dir1_name{"dummy_dir1"};
     const inline static std::string dum_dirname{"dum"};
     const inline static std::string packr{"../packr"};
-
-  private:
 };

@@ -1,18 +1,9 @@
-#include <packr/utils.hpp>
-#include <packr/types.hpp>
 #include <packr/entry.hpp>
+
 #include "shared_test_data.hpp"
-#include <system_error>
 #include <gtest/gtest.h>
-#include <string>
-#include <tuple>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <filesystem>
 
-using namespace packr;
-
-TEST_F(packingAndUnpackingTestdata, packFilename) {
+TEST_F(packingAndUnpackingFixture, packFilename) {
     std::error_code err;
     // New directory to contain the results of these tests
     // make sure that it's already fresh and deleted

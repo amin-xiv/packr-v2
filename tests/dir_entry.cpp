@@ -12,7 +12,7 @@
 
 using namespace packr;
 
-TEST_F(packingAndUnpackingTestdata, DirectoryEntryConstructorData) {
+TEST_F(packingAndUnpackingFixture, DirectoryEntryConstructorData) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{0};

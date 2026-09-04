@@ -1,5 +1,7 @@
+add_compile_options(-fsanitize=undefined,address)
+include_directories(../include/)
+
 add_executable(main_tests
-	./packing.cpp
 	./unpacking.cpp
 	./dir_entry.cpp
 	./file_entry.cpp
@@ -10,14 +12,20 @@ add_executable(main_tests
 	../src/utils.cpp
 	../src/entry.cpp
 )
-
-add_compile_options(-fsanitize=undefined,address)
+add_executable(env_setup_tests ./env_setup.cpp)
 
 target_link_libraries(main_tests PRIVATE
 					GTest::gtest_main
 					-fsanitize=undefined,address
 )
+target_link_libraries(env_setup_tests PRIVATE
+					GTest::gtest_main
+					-fsanitize=undefined,address
+)
 
-target_include_directories(main_tests PRIVATE ../include)
-
-gtest_discover_tests(main_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+gtest_discover_tests(env_setup_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+	PROPERTIES FIXTURES_SETUP GlobalSetup
+)
+gtest_discover_tests(main_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+	PROPERTIES FIXTURES_REQUIRED GlobalSetup
+)

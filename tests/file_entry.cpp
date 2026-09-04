@@ -11,7 +11,7 @@
 
 using namespace packr;
 
-TEST_F(packingAndUnpackingTestdata, FileEntryBasic) {
+TEST_F(packingAndUnpackingFixture, FileEntryBasic) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{};
@@ -39,7 +39,7 @@ TEST_F(packingAndUnpackingTestdata, FileEntryBasic) {
     EXPECT_EQ(fileEntry.m_type, file_type::regular);
 }
 
-TEST_F(packingAndUnpackingTestdata, FileEntrySymlink) {
+TEST_F(packingAndUnpackingFixture, FileEntrySymlink) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{O_SYM};
@@ -78,7 +78,7 @@ TEST_F(packingAndUnpackingTestdata, FileEntrySymlink) {
     EXPECT_EQ(fileEntry.m_type, file_type::symlink);
 }
 
-TEST_F(packingAndUnpackingTestdata, FileEntryBrokenSymlink) {
+TEST_F(packingAndUnpackingFixture, FileEntryBrokenSymlink) {
     // dummy ec object to avoid exceptions
     std::error_code err;
     const u8 opts{O_SYM};

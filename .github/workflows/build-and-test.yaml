@@ -10,6 +10,7 @@ env:
     chmod +x
     ./packr
     ./tests/main_tests
+    ./tests/env_setup_tests
 
 jobs:
   build-debug-gcc:

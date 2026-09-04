@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 
 using namespace packr;
 
-TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
+TEST_F(packingAndUnpackingFixture, unpackBasicData) {
     std::error_code err;
     const int opts{};
 
@@ -41,7 +41,7 @@ TEST_F(packingAndUnpackingTestdata, unpackBasicData) {
     compare_dir_entries(dummy_dir1_data, new_dummy_dir1_data);
 }
 
-TEST_F(packingAndUnpackingTestdata, unpackFollowSymlinks) {
+TEST_F(packingAndUnpackingFixture, unpackFollowSymlinks) {
     std::error_code err;
     u8 opts{O_SYM};
 
@@ -69,7 +69,7 @@ TEST_F(packingAndUnpackingTestdata, unpackFollowSymlinks) {
     compare_dir_entries(dummy_dir1_data, dum_data);
 }
 
-TEST_F(packingAndUnpackingTestdata, unpackBasicDirStructure) {
+TEST_F(packingAndUnpackingFixture, unpackBasicDirStructure) {
     fs::current_path(playground_dirname, err);
 
     compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_name), 0);

@@ -9,6 +9,7 @@
 #include <string>
 #include <print>
 
+// TODO: remove unnecessary casts
 // TODO: std::source_location
 // TODO: initial tests setup
 // TODO: make surefull path <optional> thingy has tests

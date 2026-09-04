@@ -6,7 +6,7 @@ namespace fs = std::filesystem;
 
 class dirAndFileEntryConstructorData : public testing::Test {
   protected:
-    dirAndFileEntryConstructorData()
+    explicit dirAndFileEntryConstructorData()
         : cwd_path(fs::current_path()), cwd_str(cwd_path.string()), dir_name("dummy_dir1"),
           full_path(packr::join_to_path(dir_name, cwd_str)), joined(cwd_str + '/' + dir_name) {
     }

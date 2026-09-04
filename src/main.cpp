@@ -12,6 +12,8 @@
 // TODO: remove unnecessary casts
 // TODO: std::source_location
 // TODO: initial tests setup
+// TODO: std::addressof
+// TODO: WERR
 
 namespace fs = std::filesystem;
 

@@ -5,6 +5,15 @@
 namespace fs = std::filesystem;
 
 class packingAndUnpackingFixture : public testing::Test {
+  public:
+    void SetUp() override {
+        const fs::path curr_path{fs::current_path()};
+
+        // make sure we're on the build directory
+        ASSERT_EQ(curr_path.filename(), fs::path{"build"});
+        ASSERT_TRUE(fs::exists("../src"));
+    }
+
   protected:
     // dummer error code to avoid exceptions
     inline static std::error_code err;

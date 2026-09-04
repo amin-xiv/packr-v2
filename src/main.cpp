@@ -13,7 +13,7 @@
 // TODO: std::source_location
 // TODO: initial tests setup
 // TODO: make surefull path <optional> thingy has tests
-// TODO: relink cycle_tests/mutual/a & b to each other through parent directory and fix the bug
+// TODO: when copying dummy_dir1 into one of its child dirs, tests fail
 
 namespace fs = std::filesystem;
 

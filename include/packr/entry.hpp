@@ -12,7 +12,7 @@ namespace packr {
 using anc_map_t = std::unordered_map<std::string, dev_ino_t>;
 
 // This struct would be written into the pack file
-struct [[gnu::packed]] file_entry final {
+struct file_entry final {
     // Constructors
     file_entry() = default;
     file_entry(const std::filesystem::path& file_path, const u8 opts);
@@ -32,7 +32,7 @@ struct [[gnu::packed]] file_entry final {
 };
 
 // This struct would be written into the pack file
-struct [[gnu::packed]] dir_entry {
+struct dir_entry {
     // Constructors
     dir_entry() = default;
     dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts, anc_map_t& anc_table);
@@ -69,7 +69,7 @@ struct [[gnu::packed]] dir_entry {
 };
 
 // This is packed in place of directories which are rejected as they're potentially recursive
-struct [[gnu::packed]] dir_sym_entry final {
+struct dir_sym_entry final {
     dir_sym_entry() = default;
     dir_sym_entry(const std::filesystem::directory_entry& dir);
 

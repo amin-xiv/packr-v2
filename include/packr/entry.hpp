@@ -15,7 +15,7 @@ using anc_map_t = std::unordered_map<std::string, dev_ino_t>;
 struct file_entry final {
     // Constructors
     file_entry() = default;
-    file_entry(const std::filesystem::path& file_path, const u8 opts);
+    explicit file_entry(const std::filesystem::path& file_path, const u8 opts);
 
     char m_filename[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc
@@ -35,7 +35,7 @@ struct file_entry final {
 struct dir_entry {
     // Constructors
     dir_entry() = default;
-    dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts, anc_map_t& anc_table);
+    explicit dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count, const u8 opts, anc_map_t& anc_table);
 
     char m_dirname[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // Holds the path of the target directory if this is a symlink
@@ -71,7 +71,7 @@ struct dir_entry {
 // This is packed in place of directories which are rejected as they're potentially recursive
 struct dir_sym_entry final {
     dir_sym_entry() = default;
-    dir_sym_entry(const std::filesystem::directory_entry& dir);
+    explicit dir_sym_entry(const std::filesystem::directory_entry& dir);
 
     char m_name[NAME_MAX]{};
     char m_secondary_path[PATH_MAX]{}; // To store symlink target paths, block file paths..etc

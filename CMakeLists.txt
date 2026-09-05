@@ -15,6 +15,7 @@ include_directories(./include)
 target_compile_options(packr PRIVATE
 					-Wall
 					-Wextra
+					-Werror
 					-Wpedantic
 					-Walloca
 					-Wcast-align
@@ -48,7 +49,8 @@ target_link_options(packr PRIVATE
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(packr PRIVATE
-						-fhardened
+						$<$<CONFIG:Release>:-fhardened>
+						-Wno-error=hardened
 						-Wduplicated-branches
 						-Wduplicated-cond
 						-Wformat-overflow=2
@@ -58,7 +60,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 						-Wstrict-null-sentinel
 						-Wsuggest-attribute=format
 						-Wsuggest-attribute=malloc
-						)
+)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(packr PRIVATE
 						-Wcovered-switch-default

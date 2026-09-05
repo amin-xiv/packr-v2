@@ -11,7 +11,8 @@ namespace packr {
 class Directory final {
   public:
     Directory() = delete;
-    Directory(const std::filesystem::path& dir_path);
+    explicit Directory(const std::filesystem::path& dir_path);
+
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     [[nodiscard]] const dir_type& type() const noexcept;
@@ -33,7 +34,8 @@ class Directory final {
 class File {
   public:
     File() = delete;
-    File(const std::filesystem::path& file_path, bool symlinks_as_symlinks = true);
+    explicit File(const std::filesystem::path& file_path, bool symlinks_as_symlinks = true);
+
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;
     [[nodiscard]] const file_type& type() const noexcept;
@@ -85,7 +87,7 @@ class File_W final : public File {
 class File_sym final {
   public:
     File_sym() = delete;
-    File_sym(const std::filesystem::path& file_path);
+    explicit File_sym(const std::filesystem::path& file_path);
 
     [[nodiscard]] const std::filesystem::directory_entry& entry_obj() const noexcept;
     [[nodiscard]] const std::filesystem::path& path_obj() const noexcept;

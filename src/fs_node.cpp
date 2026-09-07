@@ -1,3 +1,4 @@
+#include <format>
 #include <packr/types.hpp>
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
@@ -57,6 +58,10 @@ Directory::operator bool() const noexcept {
 void Directory::refresh() noexcept {
     std::error_code err;
     m_directory.refresh(err);
+
+    if(err.message().empty()) {
+        m_error_message.clear();
+    }
 }
 
 std::string_view Directory::err() const noexcept {
@@ -115,6 +120,10 @@ void File::refresh() noexcept {
     // dummy error code
     std::error_code err;
     m_file.refresh(err);
+
+    if(err.message().empty()) {
+        m_error_message.clear();
+    }
 }
 
 std::string_view File::err() const noexcept {
@@ -126,24 +135,30 @@ bool File_R::setup_stream() {
 
     // Check if the file exists
     if(!fs::exists(m_file.symlink_status(err))) {
+        m_error_message = std::format("tried to setup stream of a nonexistent file: {}", m_file.path().string());
         return false;
     }
 
+    m_error_message.clear();
     m_stream.open(m_file_path.string(), std::ios::binary);
     return m_stream.is_open();
 }
 
 bool File_R::read(char* buffer, std::streamsize count) {
     if(!m_stream.is_open() || buffer == nullptr) {
+        m_error_message = "error reading from a file, either file isn't open or buffer is nullptr";
         return false;
     }
 
+    m_error_message.clear();
     m_stream.read(buffer, count);
     return true;
 }
 
-int File_R::get_fd() const noexcept {
+int File_R::get_fd() noexcept {
     assert(m_stream.is_open() && "attempted to get a file descriptor of a non-open stream");
+
+    m_error_message.clear();
     return m_stream.native_handle();
 }
 
@@ -154,6 +169,8 @@ pos_type File_R::get_offset() noexcept {
 
 const std::istream& File_R::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
     assert(m_stream.is_open());
+
+    m_error_message.clear();
     return m_stream.seekg(pos, seek_type);
 }
 
@@ -163,20 +180,24 @@ bool File_W::setup_stream(const open_type type) {
     if(type == open_type::fresh) {
         m_stream.open(m_file_path.string(), std::ios::binary | std::ios::trunc);
         this->refresh();
+        m_error_message.clear();
         return m_stream.is_open();
     }
 
     // Check if the file exists
     if(!fs::exists(m_file.symlink_status(err))) {
+        m_error_message = std::format("failed to setup write stream: the file {} doesn't exist!", m_file.path().string());
         return false;
     }
 
     m_stream.open(m_file_path.string(), std::ios::binary);
+    m_error_message.clear();
     return m_stream.is_open();
 }
 
 bool File_W::write(const char* buffer, std::streamsize count) {
     if(!m_stream.is_open() || buffer == nullptr) {
+        m_error_message = std::format("write failure: buffer is nullptr or stream isn't open");
         return false;
     }
 
@@ -184,18 +205,24 @@ bool File_W::write(const char* buffer, std::streamsize count) {
     return true;
 }
 
-int File_W::get_fd() const noexcept {
+int File_W::get_fd() noexcept {
     assert(m_stream.is_open() && "attempted to get a file descriptor of a non-open stream");
+
+    m_error_message.clear();
     return m_stream.native_handle();
 }
 
 pos_type File_W::get_offset() noexcept {
     assert(m_stream.is_open());
+
+    m_error_message.clear();
     return m_stream.tellp();
 }
 
 const std::ostream& File_W::set_offset(const pos_type& pos, std::ios_base::seekdir seek_type) noexcept {
     assert(m_stream.is_open());
+
+    m_error_message.clear();
     return m_stream.seekp(pos, seek_type);
 }
 
@@ -258,6 +285,10 @@ File_sym::operator bool() const noexcept {
 void File_sym::refresh() noexcept {
     std::error_code err;
     m_symlink_ent.refresh(err);
+
+    if(err.message().empty()) {
+        m_error_message.clear();
+    }
 }
 
 std::string_view File_sym::err() const noexcept {

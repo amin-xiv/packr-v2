@@ -81,6 +81,7 @@ struct dir_sym_entry final {
     time_spec m_mod_time{}; // last modification time
     time_spec m_sc_time{};  // last status change time
     u32 m_mode{};           // permissions
+    bool m_is_symlink{};
     bool m_success{false};
 };
 

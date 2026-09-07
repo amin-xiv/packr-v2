@@ -7,6 +7,7 @@ add_executable(main_tests
 	./file_entry.cpp
 	./side_tests.cpp
 	./fs_node.cpp
+	./dir_sym_entry.cpp
 
 	../src/fs_node.cpp
 	../src/utils.cpp

@@ -399,12 +399,9 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
         m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
         m_mode = std::to_underlying(file_obj.entry_obj().symlink_status(err).permissions());
 
-    } else {
-        // time_spec m_acc_time{}; // last access time
-        // time_spec m_mod_time{}; // last modification time
-        // time_spec m_sc_time{};  // last status change time
-        // u32 m_mode{};
+        m_is_symlink = true;
 
+    } else {
         const fs::path& dir_path{dir.path()};
         struct stat stat_obj;
         int stat_res{stat(dir_path.c_str(), &stat_obj)};
@@ -422,13 +419,15 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
 
         // it's actual_dirname as it's not a symlink, and the actual path isn't tracked, so anything..
         const fs::path& target_path{actual_dirname};
-        memcpy(m_secondary_path, target_path.c_str(), target_path.string().length());
-        m_secondary_path_length = target_path.string().length();
+        m_secondary_path[0] = '\0';
+        m_secondary_path_length = 0;
 
         m_acc_time = {.sec = stat_obj.st_atim.tv_sec, .nsec = stat_obj.st_atim.tv_nsec};
         m_mod_time = {.sec = stat_obj.st_mtim.tv_sec, .nsec = stat_obj.st_mtim.tv_nsec};
         m_sc_time = {.sec = stat_obj.st_ctim.tv_sec, .nsec = stat_obj.st_ctim.tv_nsec};
         m_mode = std::to_underlying(dir.status(err).permissions());
+
+        m_is_symlink = false;
     }
 
     m_success = true;
@@ -830,7 +829,13 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
                 assert(ent_data.m_name_length > 0);
 
                 fs::directory_entry ent_fs{ent_data.m_name};
-                fs::create_symlink(ent_data.m_secondary_path_length > 0 ? ent_data.m_secondary_path : "", ent_fs, err);
+
+                if(ent_data.m_is_symlink) {
+                    fs::create_symlink(ent_data.m_secondary_path_length > 0 ? ent_data.m_secondary_path : "", ent_fs, err);
+                } else {
+                    fs::create_directory(ent_data.m_name);
+                }
+
                 ent_fs.refresh();
                 assert(fs::exists(ent_fs.symlink_status(err)));
             }

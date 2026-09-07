@@ -15,6 +15,7 @@
 #include <system_error>
 #include <utility>
 #include <print>
+#include <memory>
 
 #ifndef NDEBUG
 #include <limits>
@@ -98,7 +99,7 @@ static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table,
     while(loop) {
         fs::path curr_parent_path{curr_parent.path()};
         struct stat stat_obj{};
-        [[maybe_unused]] int stat_res{stat(curr_parent_path.c_str(), &stat_obj)};
+        [[maybe_unused]] int stat_res{stat(curr_parent_path.c_str(), std::addressof(stat_obj))};
         assert((stat_res != -1) && "stat returned -1 while handling a fresh anc_table");
 
         const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
@@ -178,7 +179,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
-    stat_res = stat(dir.path().c_str(), &main_stat);
+    stat_res = stat(dir.path().c_str(), std::addressof(main_stat));
 
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at dir_entry constructor with dir.path(): {}", dir.path().string()));
@@ -208,7 +209,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         if(fs::is_directory(ent_sym_status)) {
             struct stat inner_stat{};
             stat_res = 0;
-            stat_res = stat(entry.path().c_str(), &inner_stat);
+            stat_res = stat(entry.path().c_str(), std::addressof(inner_stat));
 
             if(stat_res == -1) {
                 debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
@@ -251,7 +252,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                 } else if(fs::is_directory(secondary_entry)) {
                     struct stat inner_stat{};
                     stat_res = 0;
-                    stat_res = stat(secondary_entry.path().c_str(), &inner_stat);
+                    stat_res = stat(secondary_entry.path().c_str(), std::addressof(inner_stat));
 
                     if(stat_res == -1) {
                         debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
@@ -311,10 +312,10 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     int stat_res{};
 
     if(follow_symlinks && symlink_target_exists) {
-        stat_res = stat(file_path.c_str(), &file_stat);
+        stat_res = stat(file_path.c_str(), std::addressof(file_stat));
 
     } else {
-        stat_res = lstat(file_path.c_str(), &file_stat); // lstat works well with regular files and broken symlinks
+        stat_res = lstat(file_path.c_str(), std::addressof(file_stat)); // lstat works well with regular files and broken symlinks
     }
 
     assert(stat_res != -1);
@@ -375,7 +376,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
         }
 
         struct stat stat_obj;
-        int stat_res{lstat(symlink_path.c_str(), &stat_obj)};
+        int stat_res{lstat(symlink_path.c_str(), std::addressof(stat_obj))};
 
         assert(stat_res != -1);
         if(stat_res == -1) {
@@ -407,7 +408,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
 
         const fs::path& dir_path{dir.path()};
         struct stat stat_obj;
-        int stat_res{stat(dir_path.c_str(), &stat_obj)};
+        int stat_res{stat(dir_path.c_str(), std::addressof(stat_obj))};
 
         assert(stat_res != -1);
         if(stat_res == -1) {
@@ -635,7 +636,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     struct stat main_stat;
-    int stat_res{stat(dir.path().c_str(), &main_stat)};
+    int stat_res{stat(dir.path().c_str(), std::addressof(main_stat))};
 
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at dir_entry::pack_dir with dir.path(): {}", dir.path().string()));

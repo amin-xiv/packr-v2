@@ -83,17 +83,7 @@ TEST_F(packingAndUnpackingFixture, FileEntryBrokenSymlink) {
     std::error_code err;
     const u8 opts{O_SYM};
 
-    fs::directory_entry file_fs;
-
-    bool valid{};
-    if(fs::directory_entry{dummy_dir1_name}.is_symlink(err)) {
-        fs::path original_dir_path{fs::read_symlink(dummy_dir1_name, err)};
-        ASSERT_FALSE(original_dir_path.empty());
-        file_fs = fs::directory_entry{original_dir_path.string() + '/' + "broken_symlink_file"};
-        valid = true;
-    }
-
-    ASSERT_TRUE(valid);
+    fs::directory_entry file_fs{fs::directory_entry{dummy_dir1.path() / "broken_symlink_file"}};
 
     // fs directory intialization
     ASSERT_TRUE(fs::exists(file_fs.symlink_status())) << file_fs.path().string();

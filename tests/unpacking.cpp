@@ -21,7 +21,8 @@ TEST_F(packingAndUnpackingFixture, unpackBasicData) {
     // As path returns to {ROOT}/build with each new test
     fs::current_path(playground_dirname, err);
 
-    ASSERT_EQ(system(std::string{packr + " -u -l " + dummy_dir1_name + extension}.data()), 0);
+    // files should've been already unpacked on tests env setup
+
     fs::directory_entry new_dummy_dir1{"dummy_dir1"};
     EXPECT_TRUE(new_dummy_dir1.is_directory(err));
 
@@ -48,7 +49,8 @@ TEST_F(packingAndUnpackingFixture, unpackFollowSymlinks) {
     // As path returns to {ROOT}/build with each new test
     fs::current_path(playground_dirname, err);
 
-    ASSERT_EQ(system(std::string{packr + " -u -l " + dum_dirname + extension}.data()), 0);
+    // files should've been already unpacked on tests env setup
+
     fs::directory_entry dum{"dum"};
     EXPECT_TRUE(dum.is_directory(err));
 

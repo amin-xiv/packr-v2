@@ -9,6 +9,12 @@
 #include <string>
 #include <print>
 
+// FIX: a session manager
+// FIX: overseer
+// FIX: mini.starter
+// FIX: https://github.com/kevinhwang91/nvim-ufo
+// FIX: create a current default executable path and arguments for nvim-dap gdb
+
 // TODO: remove unnecessary casts
 // TODO: std::source_location
 // TODO: initial tests setup

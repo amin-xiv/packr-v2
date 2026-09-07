@@ -73,7 +73,7 @@ jobs:
         working-directory: build
 
       - name: run tests
-        run: ctest  --output-on-failure
+        run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
   build-release-gcc:
@@ -135,7 +135,7 @@ jobs:
         working-directory: build
 
       - name: run tests
-        run: ctest  --output-on-failure
+        run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
   build-debug-clang:
@@ -198,7 +198,7 @@ jobs:
         working-directory: build
 
       - name: run tests
-        run: ctest  --output-on-failure
+        run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
   build-release-clang:
@@ -260,5 +260,5 @@ jobs:
         working-directory: build
 
       - name: run tests
-        run: ctest  --output-on-failure
+        run: ctest  --output-on-failure -j$(nproc)
         working-directory: build

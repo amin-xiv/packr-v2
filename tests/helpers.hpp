@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <gtest/gtest.h>
 #include <packr/entry.hpp>
 #include <packr/utils.hpp>
@@ -42,13 +43,13 @@ void compare_dir_entries(const packr::dir_entry& lhs, const packr::dir_entry& rh
     EXPECT_EQ(lhs.m_type, rhs.m_type);
 }
 
-void compare_dir_trees(const fs::directory_entry& base, const std::filesystem::directory_entry& sample, const packr::u8 opts) {
+void compare_dir_trees(const fs::directory_entry& base, const fs::directory_entry& sample, const packr::u8 opts) {
     std::error_code err;
     const bool sym{(opts & packr::O_SYM) > 0};
 
     // verify both exist
-    ASSERT_TRUE(fs::exists(base.symlink_status()));
-    ASSERT_TRUE(fs::exists(sample.symlink_status()));
+    ASSERT_TRUE(fs::exists(base.symlink_status(err))) << std::format("{}, err: {}", base.path().string(), err.message());
+    ASSERT_TRUE(fs::exists(sample.symlink_status(err))) << std::format("{}, err: {}", sample.path().string(), err.message());
 
     anc_map_t anc_map1;
     anc_map_t anc_map2;

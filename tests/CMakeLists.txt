@@ -12,7 +12,12 @@ add_executable(main_tests
 	../src/utils.cpp
 	../src/entry.cpp
 )
-add_executable(env_setup_tests ./env_setup.cpp)
+add_executable(env_setup_tests
+	./env_setup.cpp
+	../src/fs_node.cpp
+	../src/utils.cpp
+	../src/entry.cpp
+)
 
 target_link_libraries(main_tests PRIVATE
 					GTest::gtest_main

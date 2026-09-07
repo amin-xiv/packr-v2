@@ -1,7 +1,10 @@
-#include <filesystem>
-#include <gtest/gtest.h>
 #include <packr/utils.hpp>
+
 #include "shared_test_data.hpp"
+
+#include <gtest/gtest.h>
+#include <filesystem>
+#include <memory>
 
 using namespace packr;
 
@@ -47,7 +50,7 @@ TEST(joinToPath, nullInputs) {
 TEST(addDirname, withNamedAs) {
     dir_entry dir_ent{};
     std::string src_path{"/home/desktop/some_directory"};
-    add_dirname(&dir_ent, "", src_path);
+    add_dirname(std::addressof(dir_ent), "", src_path);
     std::string test_str{"some_directory"};
     EXPECT_EQ(test_str, std::string{dir_ent.m_dirname});
     EXPECT_EQ(test_str.size(), dir_ent.m_dirname_length);
@@ -57,7 +60,7 @@ TEST(addDirname, noNamedAs) {
     dir_entry dir_ent{};
     std::string src_path{"/home/desktop/some_directory"};
     std::string named_as{"bla bla bla"};
-    add_dirname(&dir_ent, named_as, src_path);
+    add_dirname(std::addressof(dir_ent), named_as, src_path);
     EXPECT_EQ(named_as, std::string{dir_ent.m_dirname});
     EXPECT_EQ(named_as.length(), dir_ent.m_dirname_length);
 }

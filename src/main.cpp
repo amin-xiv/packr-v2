@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         if(!named_as.empty()) {
-            packr::add_dirname(&dir_data, named_as, src_path);
+            packr::add_dirname(std::addressof(dir_data), named_as, src_path);
         }
 
         print_dir_data(dir_data);

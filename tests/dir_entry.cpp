@@ -2,12 +2,14 @@
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
 #include "shared_test_data.hpp"
+// #include "helpers.hpp"
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <filesystem>
+#include <memory>
 
 using namespace packr;
 
@@ -25,7 +27,7 @@ TEST_F(packingAndUnpackingFixture, DirectoryEntryConstructorData) {
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(stat(dummy_dir1_name.data(), &ent_stat) == -1);
+    ASSERT_FALSE(stat(dummy_dir1_name.data(), std::addressof(ent_stat)) == -1);
 
     ASSERT_EQ(dirEntry.m_success, dir_entry_ret_code::success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);

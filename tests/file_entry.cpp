@@ -1,12 +1,15 @@
 #include <packr/utils.hpp>
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
+
 #include "shared_test_data.hpp"
+
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>
 #include <sys/stat.h>
 #include <filesystem>
+#include <memory>
 
 using namespace packr;
 
@@ -24,7 +27,7 @@ TEST_F(packingAndUnpackingFixture, FileEntryBasic) {
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(lstat(file_fs.path().c_str(), &ent_stat) == -1);
+    ASSERT_FALSE(lstat(file_fs.path().c_str(), std::addressof(ent_stat)) == -1);
 
     ASSERT_TRUE(fileEntry.m_success);
     EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.m_filename);
@@ -63,7 +66,7 @@ TEST_F(packingAndUnpackingFixture, FileEntrySymlink) {
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(stat(file_fs.path().c_str(), &ent_stat) == -1);
+    ASSERT_FALSE(stat(file_fs.path().c_str(), std::addressof(ent_stat)) == -1);
 
     ASSERT_TRUE(fileEntry.m_success);
     EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.m_filename);
@@ -92,7 +95,7 @@ TEST_F(packingAndUnpackingFixture, FileEntryBrokenSymlink) {
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(lstat(file_fs.path().c_str(), &ent_stat) == -1);
+    ASSERT_FALSE(lstat(file_fs.path().c_str(), std::addressof(ent_stat)) == -1);
 
     ASSERT_TRUE(fileEntry.m_success);
     EXPECT_STREQ(file_fs.path().filename().c_str(), fileEntry.m_filename);

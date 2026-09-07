@@ -15,6 +15,7 @@
 #include <system_error>
 #include <utility>
 #include <print>
+#include <memory>
 
 #ifndef NDEBUG
 #include <limits>
@@ -98,7 +99,7 @@ static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table,
     while(loop) {
         fs::path curr_parent_path{curr_parent.path()};
         struct stat stat_obj{};
-        [[maybe_unused]] int stat_res{stat(curr_parent_path.c_str(), &stat_obj)};
+        [[maybe_unused]] int stat_res{stat(curr_parent_path.c_str(), std::addressof(stat_obj))};
         assert((stat_res != -1) && "stat returned -1 while handling a fresh anc_table");
 
         const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
@@ -178,7 +179,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         }
     }
 
-    stat_res = stat(dir.path().c_str(), &main_stat);
+    stat_res = stat(dir.path().c_str(), std::addressof(main_stat));
 
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at dir_entry constructor with dir.path(): {}", dir.path().string()));
@@ -208,7 +209,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
         if(fs::is_directory(ent_sym_status)) {
             struct stat inner_stat{};
             stat_res = 0;
-            stat_res = stat(entry.path().c_str(), &inner_stat);
+            stat_res = stat(entry.path().c_str(), std::addressof(inner_stat));
 
             if(stat_res == -1) {
                 debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
@@ -251,7 +252,7 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
                 } else if(fs::is_directory(secondary_entry)) {
                     struct stat inner_stat{};
                     stat_res = 0;
-                    stat_res = stat(secondary_entry.path().c_str(), &inner_stat);
+                    stat_res = stat(secondary_entry.path().c_str(), std::addressof(inner_stat));
 
                     if(stat_res == -1) {
                         debug_log(std::format("stat_res returned -1 with dir.path(): {}", dir.path().string()));
@@ -311,10 +312,10 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     int stat_res{};
 
     if(follow_symlinks && symlink_target_exists) {
-        stat_res = stat(file_path.c_str(), &file_stat);
+        stat_res = stat(file_path.c_str(), std::addressof(file_stat));
 
     } else {
-        stat_res = lstat(file_path.c_str(), &file_stat); // lstat works well with regular files and broken symlinks
+        stat_res = lstat(file_path.c_str(), std::addressof(file_stat)); // lstat works well with regular files and broken symlinks
     }
 
     assert(stat_res != -1);
@@ -375,7 +376,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
         }
 
         struct stat stat_obj;
-        int stat_res{lstat(symlink_path.c_str(), &stat_obj)};
+        int stat_res{lstat(symlink_path.c_str(), std::addressof(stat_obj))};
 
         assert(stat_res != -1);
         if(stat_res == -1) {
@@ -404,7 +405,7 @@ dir_sym_entry::dir_sym_entry(const fs::directory_entry& dir) {
     } else {
         const fs::path& dir_path{dir.path()};
         struct stat stat_obj;
-        int stat_res{stat(dir_path.c_str(), &stat_obj)};
+        int stat_res{stat(dir_path.c_str(), std::addressof(stat_obj))};
 
         assert(stat_res != -1);
         if(stat_res == -1) {
@@ -454,13 +455,13 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
     }
 
     special_marker file_marker = {.type = ENT_FILE};
-    if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(file_marker)), sizeof(special_marker))) {
         debug_log(
             std::format("in pack_handle_regular_file, pack_file.write() failed with file_path: {}", std::string{full_path}));
         return false;
     }
 
-    if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(file_data)), sizeof(file_entry))) {
         debug_log(
             std::format("in pack_handle_regular_file, pack_file.write() failed with file_path: {}", std::string{full_path}));
         return false;
@@ -504,12 +505,12 @@ static bool pack_dir_as_symlink(const fs::directory_entry& dir, File_W& pack_fil
     assert(ent_data.m_success);
 
     special_marker file_marker = {.type = ENT_DIR_SYM};
-    if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(file_marker)), sizeof(special_marker))) {
         debug_log(std::format("in pack_dir_as_symlink, pack_file.write() failed with target path: {}", dir.path().string()));
         return false;
     }
 
-    if(!pack_file.write(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(ent_data)), sizeof(dir_sym_entry))) {
         debug_log(std::format("in pack_dir_as_symlink, pack_file.write() failed with target path: {}", dir.path().string()));
         return false;
     }
@@ -548,12 +549,12 @@ static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const 
     file_entry file_data{full_path, opts};
 
     special_marker file_marker = {.type = ENT_FILE};
-    if(!pack_file.write(reinterpret_cast<char*>(&file_marker), sizeof(special_marker))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(file_marker)), sizeof(special_marker))) {
         debug_log(std::format("in pack_a_symlink, pack_file.write() failed with full_path: {}", std::string{full_path}));
         return false;
     }
 
-    if(!pack_file.write(reinterpret_cast<char*>(&file_data), sizeof(file_entry))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(file_data)), sizeof(file_entry))) {
         debug_log(std::format("in pack_a_symlink, pack_file.write() failed with full_path: {}", std::string{full_path}));
         return false;
     }
@@ -623,7 +624,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     special_marker dir_marker_start = {.type = ENT_DIR_START};
-    if(!pack_file.write(reinterpret_cast<char*>(&dir_marker_start), sizeof(special_marker))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(dir_marker_start)), sizeof(special_marker))) {
         return false;
     }
 
@@ -634,7 +635,7 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     }
 
     struct stat main_stat;
-    int stat_res{stat(dir.path().c_str(), &main_stat)};
+    int stat_res{stat(dir.path().c_str(), std::addressof(main_stat))};
 
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at dir_entry::pack_dir with dir.path(): {}", dir.path().string()));
@@ -674,16 +675,16 @@ bool dir_entry::pack_dir(const std::filesystem::directory_entry& dir, File_W& pa
     anc_table.erase(dev_ino_str);
 
     special_marker dir_marker_end{.type = ENT_DIR_END};
-    return pack_file.write(reinterpret_cast<char*>(&dir_marker_end), sizeof(special_marker)); // bool
+    return pack_file.write(reinterpret_cast<char*>(std::addressof(dir_marker_end)), sizeof(special_marker)); // bool
 }
 
 bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack_file, const u8 opts) {
     special_marker pack_start_marker{.type = PACK_START};
-    if(!pack_file.write(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
+    if(!pack_file.write(reinterpret_cast<char*>(std::addressof(pack_start_marker)), sizeof(special_marker))) {
         return false;
     }
 
-    if(!pack_file.write(reinterpret_cast<const char*>(&opts), sizeof(opts))) {
+    if(!pack_file.write(reinterpret_cast<const char*>(std::addressof(opts)), sizeof(opts))) {
         return false;
     }
 
@@ -693,7 +694,7 @@ bool pack_header::pack(const std::filesystem::directory_entry& dir, File_W& pack
     }
 
     special_marker pacK_end_marker{.type = PACK_END};
-    return (pack_file.write(reinterpret_cast<char*>(&pacK_end_marker), sizeof(special_marker)));
+    return (pack_file.write(reinterpret_cast<char*>(std::addressof(pacK_end_marker)), sizeof(special_marker)));
 }
 
 bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_count) {
@@ -703,7 +704,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
 
     while(read_pack_file) {
         special_marker curr_marker;
-        if(!pack_file.read(reinterpret_cast<char*>(&curr_marker), sizeof(special_marker))) {
+        if(!pack_file.read(reinterpret_cast<char*>(std::addressof(curr_marker)), sizeof(special_marker))) {
             return false;
         }
         switch(curr_marker.type) {
@@ -719,7 +720,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
         case ENT_FILE:
             {
                 file_entry curr_file_data;
-                if(!pack_file.read(reinterpret_cast<char*>(&curr_file_data), sizeof(file_entry))) {
+                if(!pack_file.read(reinterpret_cast<char*>(std::addressof(curr_file_data)), sizeof(file_entry))) {
                     debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
@@ -763,7 +764,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
         case ENT_DIR_START:
             {
                 dir_entry curr_dir_data;
-                if(!pack_file.read(reinterpret_cast<char*>(&curr_dir_data), sizeof(dir_entry))) {
+                if(!pack_file.read(reinterpret_cast<char*>(std::addressof(curr_dir_data)), sizeof(dir_entry))) {
                     debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
@@ -821,7 +822,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
         case ENT_DIR_SYM:
             {
                 dir_sym_entry ent_data;
-                if(!pack_file.read(reinterpret_cast<char*>(&ent_data), sizeof(dir_sym_entry))) {
+                if(!pack_file.read(reinterpret_cast<char*>(std::addressof(ent_data)), sizeof(dir_sym_entry))) {
                     debug_log("in dir_entry::unpack_dir, pack_file.read() failed");
                     return false;
                 }
@@ -854,7 +855,7 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
 bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     // Reading PACK_START
     special_marker pack_start_marker;
-    if(!pack_file.read(reinterpret_cast<char*>(&pack_start_marker), sizeof(special_marker))) {
+    if(!pack_file.read(reinterpret_cast<char*>(std::addressof(pack_start_marker)), sizeof(special_marker))) {
         debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
@@ -864,21 +865,21 @@ bool dir_entry::unpack(File_R& pack_file, const u8 opts) {
     }
 
     u8 pack_file_opts{};
-    if(!pack_file.read(reinterpret_cast<char*>(&pack_file_opts), sizeof(opts))) {
+    if(!pack_file.read(reinterpret_cast<char*>(std::addressof(pack_file_opts)), sizeof(opts))) {
         debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
 
     // Reading pack_header
     dir_entry pack_header;
-    if(!pack_file.read(reinterpret_cast<char*>(&pack_header), sizeof(dir_entry))) {
+    if(!pack_file.read(reinterpret_cast<char*>(std::addressof(pack_header)), sizeof(dir_entry))) {
         debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;
     }
 
     // This marks the start of the target root directory
     special_marker initial_dir_start_marker;
-    if(!pack_file.read(reinterpret_cast<char*>(&initial_dir_start_marker),
+    if(!pack_file.read(reinterpret_cast<char*>(std::addressof(initial_dir_start_marker)),
                        static_cast<std::streamsize>(sizeof(special_marker)))) {
         debug_log("in dir_entry::unpack, pack_file.read() failed");
         return false;

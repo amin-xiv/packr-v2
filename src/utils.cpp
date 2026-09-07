@@ -5,7 +5,6 @@
 
 #include <filesystem>
 #include <cassert>
-#include <stdexcept>
 #include <string_view>
 #include <unistd.h>
 #include <cstring>
@@ -14,6 +13,11 @@
 #include <sys/stat.h>
 #include <print>
 #include <format>
+#include <memory>
+
+#ifndef NDEBUG
+#include <stdexcept>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -64,7 +68,7 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_t
     u64 size{};
 
     struct ::stat stat_obj;
-    int stat_res{::stat(dir.path().c_str(), &stat_obj)};
+    int stat_res{::stat(dir.path().c_str(), std::addressof(stat_obj))};
 
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at get_dir_size  with dir.path(): {}", dir.path().string()));
@@ -235,7 +239,8 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
     const int out_fd{dest.get_fd()};
 
     // This copy_file_range function is coming from unistd.h
-    ssize_t copy_res{::copy_file_range(dest_fd, &source_offset, out_fd, &dest_offset, static_cast<std::size_t>(length), 0)};
+    ssize_t copy_res{::copy_file_range(dest_fd, std::addressof(source_offset), out_fd, std::addressof(dest_offset),
+                                       static_cast<std::size_t>(length), 0)};
 
     // We need to advance pack_file position as copy_file_range won't advance it
     // and therefore would confuse any further reading / writing as file descriptor

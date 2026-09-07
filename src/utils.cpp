@@ -119,37 +119,28 @@ u64 get_dir_size(const fs::directory_entry& dir, const u8 opts, anc_map_t& anc_t
 void print_dir_data(const dir_entry& dir_data) {
     // Integers are casted to their types since the struct dir_entry is packed
 
-    debug_log(std::format("dir name: {}", std::string{static_cast<const char*>(dir_data.m_dirname)}), log_type::info);
-    debug_log(std::format("dir name length: {}", std::to_string(static_cast<packr::u16>(dir_data.m_dirname_length))),
-              log_type::info);
-    debug_log(std::format("dir size is: {}", std::to_string(static_cast<packr::u64>(dir_data.m_size))), log_type::info);
+    debug_log(std::format("dir name: {}", std::string{dir_data.m_dirname}), log_type::info);
+    debug_log(std::format("dir name length: {}", std::to_string(dir_data.m_dirname_length)), log_type::info);
+    debug_log(std::format("dir size is: {}", std::to_string(dir_data.m_size)), log_type::info);
 
-    debug_log(std::format("total_dir_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_dir_count))),
-              log_type::info);
-    debug_log(std::format("total_file_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_file_count))),
-              log_type::info);
-    debug_log(std::format("total_entry_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_total_entry_count))),
-              log_type::info);
+    debug_log(std::format("total_dir_count: {}", std::to_string(dir_data.m_total_dir_count)), log_type::info);
+    debug_log(std::format("total_file_count: {}", std::to_string(dir_data.m_total_file_count)), log_type::info);
+    debug_log(std::format("total_entry_count: {}", std::to_string(dir_data.m_total_entry_count)), log_type::info);
 
-    debug_log(std::format("child_dir_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_dir_count))),
-              log_type::info);
-    debug_log(std::format("child_file_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_file_count))),
-              log_type::info);
-    debug_log(std::format("child_entry_count: {}", std::to_string(static_cast<packr::u64>(dir_data.m_child_entry_count))),
-              log_type::info);
+    debug_log(std::format("child_dir_count: {}", std::to_string(dir_data.m_child_dir_count)), log_type::info);
+    debug_log(std::format("child_file_count: {}", std::to_string(dir_data.m_child_file_count)), log_type::info);
+    debug_log(std::format("child_entry_count: {}", std::to_string(dir_data.m_child_entry_count)), log_type::info);
 
-    debug_log(std::format("last access time: sec: {}, nsec: {}", std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.sec)),
-                          std::to_string(static_cast<packr::i64>(dir_data.m_acc_time.nsec))),
+    debug_log(std::format("last access time: sec: {}, nsec: {}", std::to_string(dir_data.m_acc_time.sec),
+                          std::to_string(dir_data.m_acc_time.nsec)),
               log_type::info);
-    debug_log(std::format("last modification time: sec: {}, nsec: {}",
-                          std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.sec)),
-                          std::to_string(static_cast<packr::i64>(dir_data.m_mod_time.nsec))),
+    debug_log(std::format("last modification time: sec: {}, nsec: {}", std::to_string(dir_data.m_mod_time.sec),
+                          std::to_string(dir_data.m_mod_time.nsec)),
               log_type::info);
-    debug_log(std::format("last last status change time: sec: {}, nsec: {}",
-                          std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.sec)),
-                          std::to_string(static_cast<packr::i64>(dir_data.m_sc_time.nsec))),
+    debug_log(std::format("last last status change time: sec: {}, nsec: {}", std::to_string(dir_data.m_sc_time.sec),
+                          std::to_string(dir_data.m_sc_time.nsec)),
               log_type::info);
-    debug_log(std::format("mode: {}", std::to_string(static_cast<packr::u64>(dir_data.m_mode))), log_type::info);
+    debug_log(std::format("mode: {}", std::to_string(dir_data.m_mode)), log_type::info);
 }
 
 bool curate_src_path(std::string& src_path) noexcept {

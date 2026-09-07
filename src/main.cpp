@@ -15,11 +15,8 @@
 // FIX: https://github.com/kevinhwang91/nvim-ufo
 // FIX: create a current default executable path and arguments for nvim-dap gdb
 
-// TODO: remove unnecessary casts
 // TODO: std::source_location
-// TODO: initial tests setup
-// TODO: make surefull path <optional> thingy has tests
-// TODO: when copying dummy_dir1 into one of its child dirs, tests fail
+// BUG: when copying dummy_dir1 into one of its child dirs, tests fail
 // BUG: adding a sym_dir in dummy_dir1 fails tests
 
 namespace fs = std::filesystem;

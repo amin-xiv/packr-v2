@@ -21,6 +21,7 @@
 // TODO: make surefull path <optional> thingy has tests
 // TODO: when copying dummy_dir1 into one of its child dirs, tests fail
 // BUG: adding a sym_dir in dummy_dir1 fails tests
+// FIX: empty error messages in main.cpp
 
 namespace fs = std::filesystem;
 

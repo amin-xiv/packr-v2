@@ -235,6 +235,9 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
 }
 
 [[nodiscard]] bool copy_file_range(File_R& source, off_t source_offset, File_W& dest, off_t dest_offset, const ssize_t length) {
+    assert(source.get_fd() > STDERR_FILENO);
+    assert(dest.get_fd() > STDERR_FILENO);
+
     const int dest_fd{source.get_fd()};
     const int out_fd{dest.get_fd()};
 

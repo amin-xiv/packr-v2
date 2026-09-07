@@ -58,7 +58,7 @@ class File_R final : public File {
   public:
     using File::File; // Inherits constructor from File class
 
-    [[nodiscard]] bool setup_stream(const open_type type);
+    [[nodiscard]] bool setup_stream();
     [[nodiscard]] bool read(char* buffer, std::streamsize count);
     [[nodiscard]] int get_fd() const noexcept;
     [[nodiscard]] pos_type get_offset() noexcept;
@@ -97,7 +97,6 @@ class File_sym final {
     operator bool() const noexcept;
     void refresh() noexcept;
     [[nodiscard]] std::string_view err() const noexcept;
-    [[nodiscard]] int get_fd() const noexcept;
 
   private:
     std::filesystem::path m_symlink_path;

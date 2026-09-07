@@ -20,6 +20,7 @@
 // TODO: initial tests setup
 // TODO: make surefull path <optional> thingy has tests
 // TODO: when copying dummy_dir1 into one of its child dirs, tests fail
+// BUG: adding a sym_dir in dummy_dir1 fails tests
 
 namespace fs = std::filesystem;
 
@@ -134,7 +135,7 @@ int main(int argc, char** argv) {
 
     } else {
         packr::File_R pack_file{fs::directory_entry(src_path)};
-        if(!pack_file.setup_stream(packr::open_type::exists)) {
+        if(!pack_file.setup_stream()) {
             std::println(stderr, "FAILED TO SETUP STREAM");
             return 1;
         }

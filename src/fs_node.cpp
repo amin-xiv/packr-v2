@@ -121,21 +121,15 @@ std::string_view File::err() const noexcept {
     return m_error_message;
 }
 
-bool File_R::setup_stream(const open_type type) {
+bool File_R::setup_stream() {
     std::error_code err;
 
-    if(type == open_type::fresh) {
-        m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
-        this->refresh();
-        return m_stream.is_open();
-    }
-
     // Check if the file exists
-    if(!fs::exists(this->entry_obj().symlink_status(err))) {
+    if(!fs::exists(m_file.symlink_status(err))) {
         return false;
     }
 
-    m_stream.open(this->path_obj().string(), std::ios::binary);
+    m_stream.open(m_file_path.string(), std::ios::binary);
     return m_stream.is_open();
 }
 
@@ -167,17 +161,17 @@ bool File_W::setup_stream(const open_type type) {
     std::error_code err;
 
     if(type == open_type::fresh) {
-        m_stream.open(this->path_obj().string(), std::ios::binary | std::ios::trunc);
+        m_stream.open(m_file_path.string(), std::ios::binary | std::ios::trunc);
         this->refresh();
         return m_stream.is_open();
     }
 
     // Check if the file exists
-    if(!fs::exists(this->entry_obj().symlink_status(err))) {
+    if(!fs::exists(m_file.symlink_status(err))) {
         return false;
     }
 
-    m_stream.open(this->path_obj().string(), std::ios::binary);
+    m_stream.open(m_file_path.string(), std::ios::binary);
     return m_stream.is_open();
 }
 

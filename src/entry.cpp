@@ -476,7 +476,7 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
             return false;
         }
 
-        if(!file_stream.setup_stream(open_type::exists)) {
+        if(!file_stream.setup_stream()) {
             debug_log(std::format("in pack_handle_regular_file, file_stream.setup_stream() failed with file_path: {}",
                                   std::string{full_path}));
             return false;
@@ -563,7 +563,7 @@ static bool pack_a_symlink(std::string_view full_path, File_W& pack_file, const 
     // contents
     if(file_data.m_size > 0) {
         File_R file_stream{full_path};
-        if(!file_stream.setup_stream(open_type::exists)) {
+        if(!file_stream.setup_stream()) {
             return false;
         }
 

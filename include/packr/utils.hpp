@@ -7,6 +7,7 @@
 #include <optional>
 #include <string_view>
 #include <sys/stat.h>
+#include <source_location>
 
 namespace packr {
 
@@ -27,7 +28,8 @@ extern void print_dir_data(const dir_entry& dir_data);
 
 [[nodiscard]] extern std::filesystem::path read_symlink(const std::filesystem::path& path);
 
-extern void debug_log(std::string_view str, const log_type type = log_type::error);
+extern void debug_log(std::string_view str, const log_type type = log_type::error,
+                      std::source_location loc = std::source_location::current());
 
 [[nodiscard]] extern bool copy_file_range(File_R& source, const off_t source_offset, File_W& dest, const off_t dest_offset,
                                           const ssize_t length);

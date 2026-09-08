@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <cassert>
+#include <source_location>
 #include <string_view>
 #include <unistd.h>
 #include <cstring>
@@ -186,7 +187,8 @@ fs::path read_symlink(const fs::path& path) {
     return res;
 }
 
-void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log_type type) {
+void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log_type type,
+               [[maybe_unused]] std::source_location loc) {
     // type is by default log_type::error;
 
 #ifndef NDEBUG
@@ -221,6 +223,7 @@ void debug_log([[maybe_unused]] std::string_view str, [[maybe_unused]] const log
     std::println(stderr, "[{}]: {}", type_str, str);
     if(type == error) {
         std::println(stderr, "errno: {}", strerror(errno));
+        std::println(stderr, "--> {}, {}:{}, {}", loc.file_name(), loc.line(), loc.column(), loc.function_name());
     }
 #endif
 }

@@ -31,7 +31,8 @@ jobs:
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Debug \
               -DCMAKE_C_COMPILER=gcc-14 \
-              -DCMAKE_CXX_COMPILER=g++-14
+              -DCMAKE_CXX_COMPILER=g++-14\
+              -DCMAKE_BINARY_DIR="."
         working-directory: build
 
       - name: Build executables
@@ -93,7 +94,8 @@ jobs:
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_C_COMPILER=gcc-14 \
-              -DCMAKE_CXX_COMPILER=g++-14
+              -DCMAKE_CXX_COMPILER=g++-14\
+              -DCMAKE_BINARY_DIR="."
         working-directory: build
 
       - name: Build executables
@@ -156,7 +158,8 @@ jobs:
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Debug \
               -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_CXX_COMPILER=clang++
+              -DCMAKE_CXX_COMPILER=clang++\
+              -DCMAKE_BINARY_DIR="."
         working-directory: build
 
       - name: Build executables
@@ -218,7 +221,8 @@ jobs:
             cmake -S .. -B . \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_CXX_COMPILER=clang++
+              -DCMAKE_CXX_COMPILER=clang++\
+              -DCMAKE_BINARY_DIR="."
         working-directory: build
 
       - name: Build executables

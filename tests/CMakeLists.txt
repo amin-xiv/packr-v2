@@ -19,19 +19,17 @@ add_executable(env_setup_tests
 	../src/utils.cpp
 	../src/entry.cpp
 )
+target_link_libraries(main_tests PRIVATE GTest::gtest_main)
+target_link_options(main_tests PRIVATE -fsanitize=undefined,address)
 
-target_link_libraries(main_tests PRIVATE
-					GTest::gtest_main
-					-fsanitize=undefined,address
-)
-target_link_libraries(env_setup_tests PRIVATE
-					GTest::gtest_main
-					-fsanitize=undefined,address
-)
+target_link_libraries(env_setup_tests PRIVATE GTest::gtest_main)
+target_link_options(env_setup_tests PRIVATE -fsanitize=undefined,address)
 
-gtest_discover_tests(env_setup_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-	PROPERTIES FIXTURES_SETUP GlobalSetup
+gtest_discover_tests(env_setup_tests PROPERTIES
+	FIXTURES_SETUP GlobalSetup
+	WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
-gtest_discover_tests(main_tests WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-	PROPERTIES FIXTURES_REQUIRED GlobalSetup
+gtest_discover_tests(main_tests PROPERTIES
+	FIXTURES_REQUIRED GlobalSetup
+	WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
 )

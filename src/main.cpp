@@ -9,11 +9,6 @@
 #include <string>
 #include <print>
 
-// FIX: overseer
-// FIX: mini.starter
-// FIX: https://github.com/kevinhwang91/nvim-ufo
-// FIX: create a current default executable path and arguments for nvim-dap gdb
-
 // BUG: when copying dummy_dir1 into one of its child dirs, tests fail
 // BUG: adding a sym_dir in dummy_dir1 fails tests
 

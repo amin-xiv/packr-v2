@@ -3,7 +3,6 @@ project(packr-v2)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BINARY_DIR "${CMAKE_SOURCE_DIR}/build")
 
 add_executable(packr
 	./src/entry.cpp

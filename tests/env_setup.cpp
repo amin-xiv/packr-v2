@@ -1,3 +1,5 @@
+#include <exception>
+#include <filesystem>
 #include <packr/entry.hpp>
 #include <packr/utils.hpp>
 

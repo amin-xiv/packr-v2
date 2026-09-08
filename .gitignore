@@ -14,6 +14,8 @@ obj/
 bin/
 dist/
 out/
+.gcc*
+.clang*
 
 # Temporary files
 *~
@@ -34,7 +36,7 @@ vgcore.*
 deps/
 lib/
 
-# IDE/Editor files (Unix-focused)
+# IDE/Editor files 
 .vscode/
 .idea/
 *.code-workspace
@@ -51,3 +53,5 @@ compile_commands.json
 .cache/
 play.cpp
 Testing/
+.env
+.dap

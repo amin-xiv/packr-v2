@@ -7,10 +7,8 @@ namespace fs = std::filesystem;
 class packingAndUnpackingFixture : public testing::Test {
   public:
     void SetUp() override {
-        const fs::path curr_path{fs::current_path()};
-
-        // make sure we're on the build directory
-        ASSERT_EQ(curr_path.filename(), fs::path{"build"});
+        // make sure we're on a build directory
+        ASSERT_TRUE(fs::exists("../CMakeLists.txt"));
         ASSERT_TRUE(fs::exists("../src"));
     }
 

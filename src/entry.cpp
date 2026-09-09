@@ -3,6 +3,7 @@
 #include <packr/utils.hpp>
 #include <packr/fs_node.hpp>
 #include <packr/misc_structs.hpp>
+#include <packr/internal.hpp>
 
 #include <filesystem>
 #include <ios>
@@ -81,8 +82,9 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 }
 
 // called at handle_dir_ancestory to initially populate anc_table with the parents of dir
-static void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table, bool second_pass = false) {
+void populate_with_parents(fs::directory_entry dir, anc_map_t& anc_table, bool second_pass) {
     // second_pass flag is to denote the second pass on which we populate by ino and dev nums of the canonical path
+    // which is false by default
 #ifndef NDEBUG
     if(second_pass) {
         assert(!anc_table.empty() && "anc_table was empty at populate_with_parents at second_pass");
@@ -130,7 +132,7 @@ bool handle_dir_ancestory(const struct stat& stat_obj, anc_map_t& anc_table, con
 
     const std::string dev_ino_str{std::to_string(stat_obj.st_dev) + std::to_string(stat_obj.st_ino)};
     const dev_ino_t dev_ino{.dev = stat_obj.st_dev, .ino = stat_obj.st_ino};
-    const bool collide{!anc_table.empty() && anc_table.contains(dev_ino_str)};
+    const bool collide{anc_table.contains(dev_ino_str)};
 
     if(!collide && !compare_only) {
         [[maybe_unused]] const auto emplace_res{anc_table.try_emplace(dev_ino_str, dev_ino)};

@@ -1,10 +1,12 @@
 #pragma once
 
-#include <format>
-#include <gtest/gtest.h>
 #include <packr/entry.hpp>
 #include <packr/utils.hpp>
 #include <packr/misc_structs.hpp>
+#include <packr/internal.hpp>
+
+#include <format>
+#include <gtest/gtest.h>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -54,7 +56,8 @@ void compare_dir_trees(const fs::directory_entry& base, const fs::directory_entr
     anc_map_t anc_map1;
     anc_map_t anc_map2;
     // verify both have the same size before we even start
-    ASSERT_EQ(packr::get_dir_size(base, opts, anc_map1), packr::get_dir_size(sample, opts, anc_map2));
+    ASSERT_EQ(packr::get_dir_size(base, opts, anc_map1), packr::get_dir_size(sample, opts, anc_map2))
+        << std::format("base: {}, sample: {}", base.path().string(), sample.path().string());
 
     for(const fs::directory_entry& entry : std::filesystem::recursive_directory_iterator(base)) {
         std::string entry_relative_path{entry.path()};
@@ -71,7 +74,8 @@ void compare_dir_trees(const fs::directory_entry& base, const fs::directory_entr
             ASSERT_TRUE(fs::is_directory(sample_copy));
             anc_map1.clear();
             anc_map2.clear();
-            ASSERT_EQ(get_dir_size(entry, opts, anc_map2), get_dir_size(sample_copy, opts, anc_map2));
+            ASSERT_EQ(get_dir_size(entry, opts, anc_map2), get_dir_size(sample_copy, opts, anc_map2))
+                << std::format("entry: {}, sample_copy: {}", entry.path().string(), sample_copy.path().string());
         } else if(fs::is_symlink(entry_sym_stat)) {
             fs::path entry_canonical{packr::read_symlink(entry)};
 

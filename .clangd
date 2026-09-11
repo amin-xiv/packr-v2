@@ -1,2 +1,0 @@
-CompileFlags:
-  Remove: [-fhardened] # This only works with GCC

@@ -223,6 +223,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
             // compare_only as the table would be assumed unaltered at the nest inc_dir_ent_dir_count call
             if(handle_dir_ancestory(inner_stat, anc_table, entry, true)) {
+                // we simply increment file counts since recursive symlinks would be packed as a dir_sym_entry and not be totally
+                // ignored
+                inc_dir_ent_file_count(*this, entry, nest_count, false);
                 continue;
             }
 
@@ -268,6 +271,9 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
                     // compare_only as the table would be assumed unaltered at the nest inc_dir_ent_dir_count call
                     if(handle_dir_ancestory(inner_stat, anc_table, entry, true)) {
+                        // we simply increment file counts since recursive symlinks would be packed as a dir_sym_entry and not be
+                        // totally ignored
+                        inc_dir_ent_file_count(*this, entry, nest_count, false);
                         continue;
                     }
 

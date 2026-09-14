@@ -20,7 +20,7 @@ TEST_F(packingAndUnpackingFixture, FileEntryBasic) {
     const u8 opts{};
 
     // fs directory intialization
-    fs::directory_entry file_fs{std::string{dummy_dir1_name + '/' + "hallo.txt"}};
+    fs::directory_entry file_fs{std::string{dummy_dir1_dirname + '/' + "hallo.txt"}};
     ASSERT_TRUE(file_fs.exists()) << file_fs.path().string();
 
     // dir_entry initialization
@@ -50,8 +50,8 @@ TEST_F(packingAndUnpackingFixture, FileEntrySymlink) {
     fs::directory_entry file_fs;
 
     bool valid{};
-    if(fs::directory_entry{dummy_dir1_name}.is_symlink(err)) {
-        fs::path original_dir_path{fs::read_symlink(dummy_dir1_name, err)};
+    if(fs::directory_entry{dummy_dir1_dirname}.is_symlink(err)) {
+        fs::path original_dir_path{fs::read_symlink(dummy_dir1_dirname, err)};
         ASSERT_FALSE(original_dir_path.empty());
         file_fs = fs::directory_entry{original_dir_path.string() + '/' + "sym_file"};
         valid = true;

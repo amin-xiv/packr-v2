@@ -11,6 +11,8 @@
 using namespace packr;
 
 TEST_F(packingAndUnpackingFixture, regularDir) {
+    std::error_code err;
+
     fs::directory_entry dir{playground_dirname};
     ASSERT_TRUE(fs::exists(dir));
 
@@ -28,15 +30,17 @@ TEST_F(packingAndUnpackingFixture, regularDir) {
 }
 
 TEST_F(packingAndUnpackingFixture, DirSym_Symlink) {
-    fs::directory_entry dir{dummy_dir1_name};
+    std::error_code err;
+
+    fs::directory_entry dir{dummy_dir1_dirname};
     ASSERT_TRUE(fs::exists(dir));
     fs::path secondary_path{fs::read_symlink(dir)};
 
     dir_sym_entry entry{dir};
     ASSERT_TRUE(entry.m_success);
 
-    EXPECT_STREQ(entry.m_name, dummy_dir1_name.c_str());
-    EXPECT_EQ(entry.m_name_length, dummy_dir1_name.length());
+    EXPECT_STREQ(entry.m_name, dummy_dir1_dirname.c_str());
+    EXPECT_EQ(entry.m_name_length, dummy_dir1_dirname.length());
     EXPECT_STREQ(entry.m_secondary_path, secondary_path.c_str());
     EXPECT_EQ(entry.m_secondary_path_length, secondary_path.string().length());
     EXPECT_EQ(entry.m_mode, std::to_underlying(dir.symlink_status(err).permissions()));

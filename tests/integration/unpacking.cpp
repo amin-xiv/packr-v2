@@ -75,8 +75,38 @@ TEST_F(packingAndUnpackingFixture, unpackFollowSymlinks) {
 }
 
 TEST_F(packingAndUnpackingFixture, unpackBasicDirStructure) {
+    std::error_code err;
     fs::current_path(playground_dirname, err);
 
-    compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_name), 0);
+    compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_dirname), 0);
     compare_dir_trees(dummy_dir1, fs::directory_entry(dum_dirname), O_SYM);
+}
+
+TEST_F(packingAndUnpackingFixture, cycle_tests_dereference) {
+    std::error_code err;
+    u8 opts{O_SYM};
+
+    // As path returns to {ROOT}/build with each new test
+    fs::current_path(playground_dirname, err);
+
+    // files should've been already unpacked on tests env setup
+
+    EXPECT_TRUE(cycle_test.is_directory(err));
+    fs::directory_entry new_cycle_test{cycle_test_dirname};
+    EXPECT_TRUE(new_cycle_test.is_directory(err));
+
+    anc_map_t anc_map{};
+    dir_entry cycle_test_data{cycle_test, DEFAULT_ROOT_DIR, opts, anc_map};
+    anc_map.clear();
+    dir_entry new_cycle_test_data{new_cycle_test, DEFAULT_ROOT_DIR, opts, anc_map};
+
+    anc_map.clear();
+
+    ASSERT_EQ(cycle_test_data.m_size, get_dir_size(cycle_test, opts, anc_map));
+    ASSERT_EQ(cycle_test_data.m_size, new_cycle_test_data.m_size);
+    anc_map.clear();
+    ASSERT_EQ(cycle_test_data.m_size, get_dir_size(new_cycle_test, opts, anc_map));
+
+    compare_dir_trees(cycle_test, new_cycle_test, opts);
+    compare_dir_entries(cycle_test_data, new_cycle_test_data);
 }

@@ -15,14 +15,13 @@ class packingAndUnpackingFixture : public testing::Test {
     }
 
   protected:
-    // dummer error code to avoid exceptions
-    inline static std::error_code err;
-    // cwd
-    const inline static fs::directory_entry build_dir{fs::current_path(err)};
+    const inline static fs::directory_entry build_dir{fs::current_path()};
     const inline static std::string playground_dirname{"playground"};
     const inline static std::string extension{".packr"};
     const fs::directory_entry dummy_dir1{fs::canonical("dummy_dir1")};
-    const inline static std::string dummy_dir1_name{"dummy_dir1"};
+    const inline static std::string dummy_dir1_dirname{"dummy_dir1"};
+    const fs::directory_entry cycle_test{fs::canonical("cycle_test")};
+    const inline static std::string cycle_test_dirname{"cycle_test"};
     const inline static std::string dum_dirname{"dum"};
     const inline static std::string packr{"../packr"};
 };

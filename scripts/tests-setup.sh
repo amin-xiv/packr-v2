@@ -1,5 +1,10 @@
 #!/bin/bash
 
 if ! [ -h "dummy_dir1" ]; then
-ln -s "$(pwd)/../tests/test-data/dummy_dir1/" dummy_dir1
+	ln -s "$(pwd)/../tests/test-data/dummy_dir1/" dummy_dir1
 fi
+
+if ! [ -h "cycle_test" ]; then
+	ln -s "$(pwd)/../tests/test-data/cycle_test" cycle_test
+fi
+

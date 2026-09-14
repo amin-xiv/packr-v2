@@ -1,9 +1,8 @@
-#include <exception>
 #include <filesystem>
 #include <packr/entry.hpp>
 #include <packr/utils.hpp>
 
-#include "shared_test_data.hpp"
+#include "./helpers/shared_test_data.hpp"
 #include <gtest/gtest.h>
 
 using namespace packr;

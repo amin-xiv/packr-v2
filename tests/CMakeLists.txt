@@ -2,12 +2,12 @@ add_compile_options(-fsanitize=undefined,address)
 include_directories(../include/)
 
 add_executable(main_tests
-	./unpacking.cpp
-	./dir_entry.cpp
-	./file_entry.cpp
-	./side_tests.cpp
-	./fs_node.cpp
-	./dir_sym_entry.cpp
+	./integration/unpacking.cpp
+	./integration/dir_entry.cpp
+	./integration/file_entry.cpp
+	./unit/side_tests.cpp
+	./integration/fs_node.cpp
+	./integration/dir_sym_entry.cpp
 
 	../src/fs_node.cpp
 	../src/utils.cpp

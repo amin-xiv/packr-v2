@@ -1,6 +1,6 @@
 #include <packr/utils.hpp>
 
-#include "shared_test_data.hpp"
+#include "../helpers/shared_test_data.hpp"
 
 #include <gtest/gtest.h>
 #include <filesystem>

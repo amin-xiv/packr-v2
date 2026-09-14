@@ -2,7 +2,7 @@
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
 
-#include "shared_test_data.hpp"
+#include "../helpers/shared_test_data.hpp"
 
 #include <gtest/gtest.h>
 #include <filesystem>

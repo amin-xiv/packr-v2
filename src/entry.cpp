@@ -4,6 +4,7 @@
 #include <packr/fs_node.hpp>
 #include <packr/misc_structs.hpp>
 #include <packr/internal.hpp>
+#include <packr/constants.hpp>
 
 #include <filesystem>
 #include <ios>

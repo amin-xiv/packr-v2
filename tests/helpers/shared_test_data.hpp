@@ -1,3 +1,5 @@
+#pragma once
+
 #include <gtest/gtest.h>
 #include <packr/utils.hpp>
 #include <filesystem>

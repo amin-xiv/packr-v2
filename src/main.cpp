@@ -2,6 +2,7 @@
 #include <packr/utils.hpp>
 #include <packr/entry.hpp>
 #include <packr/fs_node.hpp>
+#include <packr/constants.hpp>
 
 #include <filesystem>
 #include <cstring>

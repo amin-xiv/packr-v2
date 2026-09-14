@@ -4,6 +4,7 @@
 #include <packr/utils.hpp>
 #include <packr/misc_structs.hpp>
 #include <packr/internal.hpp>
+#include <packr/constants.hpp>
 
 #include <format>
 #include <gtest/gtest.h>

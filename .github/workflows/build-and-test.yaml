@@ -9,7 +9,8 @@ env:
     pwd && ls -R &&
     chmod +x
     ./packr
-    ./tests/main_tests
+    ./tests/unit_tests
+    ./tests/integration_tests
     ./tests/env_setup_tests
 
 jobs:

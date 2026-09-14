@@ -1,7 +1,10 @@
 #include <packr/utils.hpp>
 #include <packr/types.hpp>
 #include <packr/entry.hpp>
+#include <packr/constants.hpp>
+
 #include "../helpers/shared_test_data.hpp"
+
 #include <system_error>
 #include <gtest/gtest.h>
 #include <string>

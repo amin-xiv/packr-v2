@@ -74,7 +74,7 @@ void compare_dir_trees(const fs::directory_entry& base, const fs::directory_entr
             ASSERT_TRUE(fs::is_directory(sample_copy));
             anc_map1.clear();
             anc_map2.clear();
-            ASSERT_EQ(get_dir_size(entry, opts, anc_map2), get_dir_size(sample_copy, opts, anc_map2))
+            ASSERT_EQ(get_dir_size(entry, opts, anc_map1), get_dir_size(sample_copy, opts, anc_map2))
                 << std::format("entry: {}, sample_copy: {}", entry.path().string(), sample_copy.path().string());
         } else if(fs::is_symlink(entry_sym_stat)) {
             fs::path entry_canonical{packr::read_symlink(entry)};

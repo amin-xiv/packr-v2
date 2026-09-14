@@ -75,7 +75,7 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 
     // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
     // we can increment child counts
-    if(nest_count == 0) {
+    if((nest_count) == 0) {
         dir.m_child_entry_count++;
         dir.m_child_file_count++;
     }
@@ -249,6 +249,8 @@ dir_entry::dir_entry(const std::filesystem::directory_entry& dir, u32 nest_count
 
             } else {
                 if(fs::is_regular_file(secondary_entry)) {
+                    // Here we do not add 1 to nest_count as this file is in the same current directory that has the same
+                    // nest_count
                     inc_dir_ent_file_count(*this, secondary_entry, nest_count);
 
                 } else if(fs::is_directory(secondary_entry)) {

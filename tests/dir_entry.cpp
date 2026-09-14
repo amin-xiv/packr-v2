@@ -38,12 +38,12 @@ TEST_F(packingAndUnpackingFixture, DirectoryEntryConstructorData) {
     // compare_time_specs(ent_stat.st_atim, dirEntry.m_acc_time);
     // compare_time_specs(ent_stat.st_mtim, dirEntry.m_mod_time);
     // compare_time_specs(ent_stat.st_ctim, dirEntry.m_sc_time);
-    EXPECT_EQ(dirEntry.m_child_entry_count, 6);
+    EXPECT_EQ(dirEntry.m_child_entry_count, 8);
     EXPECT_EQ(dirEntry.m_child_file_count, 5);
-    EXPECT_EQ(dirEntry.m_child_dir_count, 1);
-    EXPECT_EQ(dirEntry.m_total_entry_count, 13);
-    EXPECT_EQ(dirEntry.m_total_file_count, 10);
-    EXPECT_EQ(dirEntry.m_total_dir_count, 3);
+    EXPECT_EQ(dirEntry.m_child_dir_count, 3);
+    EXPECT_EQ(dirEntry.m_total_entry_count, 33);
+    EXPECT_EQ(dirEntry.m_total_file_count, 24);
+    EXPECT_EQ(dirEntry.m_total_dir_count, 9);
     EXPECT_EQ((fs::perms(dirEntry.m_mode)), dir_fs.status().permissions());
     EXPECT_EQ(dirEntry.m_type, dir_type::regular);
 }

@@ -9,9 +9,6 @@
 #include <string>
 #include <print>
 
-// BUG: when copying dummy_dir1 into one of its child dirs, tests fail
-// BUG: adding a sym_dir in dummy_dir1 fails tests
-
 namespace fs = std::filesystem;
 
 static void print_help();

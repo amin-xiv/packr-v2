@@ -20,16 +20,16 @@ TEST_F(packingAndUnpackingFixture, DirectoryEntryConstructorData) {
     std::error_code err;
     const u8 opts{0};
     // fs directory intialization
-    fs::directory_entry dir_fs{dummy_dir1_name};
+    fs::directory_entry dir_fs{dummy_dir1_dirname};
     ASSERT_TRUE(fs::is_directory(dir_fs));
 
     // dir_entry initialization
     anc_map_t anc_map{};
-    dir_entry dirEntry{fs::directory_entry{dummy_dir1_name}, DEFAULT_ROOT_DIR, opts, anc_map};
+    dir_entry dirEntry{fs::directory_entry{dummy_dir1_dirname}, DEFAULT_ROOT_DIR, opts, anc_map};
 
     struct stat ent_stat;
     // getting the dir's timestamps and such
-    ASSERT_FALSE(stat(dummy_dir1_name.data(), std::addressof(ent_stat)) == -1);
+    ASSERT_FALSE(stat(dummy_dir1_dirname.data(), std::addressof(ent_stat)) == -1);
 
     ASSERT_EQ(dirEntry.m_success, dir_entry_ret_code::success);
     EXPECT_STREQ(dir_fs.path().filename().c_str(), dirEntry.m_dirname);

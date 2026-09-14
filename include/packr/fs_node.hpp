@@ -62,7 +62,7 @@ class File_R final : public File {
     [[nodiscard]] bool read(char* buffer, std::streamsize count);
     [[nodiscard]] int get_fd() noexcept;
     [[nodiscard]] pos_type get_offset() noexcept;
-    const std::istream& set_offset(const pos_type& pos, std::ios_base::seekdir = std::ios_base::cur) noexcept;
+    const std::istream& set_offset(const pos_type& pos, std::ios_base::seekdir seek_type = std::ios_base::cur) noexcept;
 
   private:
     std::ifstream m_stream;
@@ -77,7 +77,7 @@ class File_W final : public File {
     [[nodiscard]] bool write(const char* buffer, std::streamsize count);
     [[nodiscard]] int get_fd() noexcept;
     [[nodiscard]] pos_type get_offset() noexcept;
-    const std::ostream& set_offset(const pos_type& pos, std::ios_base::seekdir = std::ios_base::cur) noexcept;
+    const std::ostream& set_offset(const pos_type& pos, std::ios_base::seekdir seek_type = std::ios_base::cur) noexcept;
 
   private:
     std::ofstream m_stream;

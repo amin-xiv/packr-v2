@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 
 static void print_help();
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
     int cur_opt{};
     packr::u8 opts{};
     std::string src_path{};

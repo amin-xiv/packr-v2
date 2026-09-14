@@ -75,7 +75,7 @@ static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& en
 
     // if nest_count == 0(DEFAULT_ROOT_DIR) then we are at root directory, so
     // we can increment child counts
-    if((nest_count) == 0) {
+    if(nest_count == 0) {
         dir.m_child_entry_count++;
         dir.m_child_file_count++;
     }
@@ -126,7 +126,7 @@ bool handle_dir_ancestory(const struct stat& stat_obj, anc_map_t& anc_table, con
     assert(dir.exists(err));
 
     // pre-populate the table with all ancestor's nums to avoid that type of recursion
-    if(anc_table.size() == 0) {
+    if(anc_table.empty()) {
         populate_with_parents(dir, anc_table);
     }
 
@@ -451,7 +451,7 @@ static bool pack_handle_regular_file(std::string_view full_path, File_W& pack_fi
         return false;
     }
 
-    if(alt_filename.length() > 0) {
+    if(!alt_filename.empty()) {
         memset(file_data.m_filename, '\0', file_data.m_filename_length);
 
         memcpy(file_data.m_filename, alt_filename.data(), alt_filename.length());

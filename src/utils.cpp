@@ -153,11 +153,11 @@ void print_dir_data(const dir_entry& dir_data) {
     debug_log(std::format("mode: {}", std::to_string(dir_data.m_mode)), log_type::info);
 }
 
-bool curate_src_path(std::string& src_path) noexcept {
+bool curate_src_path(std::string& src_path) {
     if(*(src_path.data()) != '/') {
         char* cwd = getcwd(nullptr, 0);
         std::optional<std::string> src_path_temp{packr::join_to_path(src_path, cwd)};
-        if(!src_path_temp) {
+        if(!src_path_temp.has_value()) {
             return false;
         }
 

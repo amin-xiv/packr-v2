@@ -15,7 +15,8 @@ bin/
 dist/
 out/
 .gcc*
-.clang*
+.clang-d*
+.clang-r*
 
 # Temporary files
 *~

@@ -74,7 +74,7 @@ jobs:
       - run: ls && ls -R && tree
         working-directory: build
 
-      - name: run tests
+      - name: Run tests
         run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
@@ -137,7 +137,7 @@ jobs:
       - run: ls && ls -R && tree
         working-directory: build
 
-      - name: run tests
+      - name: Run tests
         run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
@@ -201,7 +201,7 @@ jobs:
       - run: ls && ls -R && tree
         working-directory: build
 
-      - name: run tests
+      - name: Run tests
         run: ctest  --output-on-failure -j$(nproc)
         working-directory: build
 
@@ -264,6 +264,6 @@ jobs:
       - run: ls && ls -R && tree
         working-directory: build
 
-      - name: run tests
+      - name: Run tests
         run: ctest  --output-on-failure -j$(nproc)
         working-directory: build

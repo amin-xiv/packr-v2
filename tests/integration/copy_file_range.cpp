@@ -48,3 +48,14 @@ TEST(copy_file_range, main) {
     std::string err_msg{std::format("source: {}, dest: {}", source_contents.get(), new_dest_contents.get())};
     EXPECT_EQ(std::memcmp(source_contents.get(), new_dest_contents.get(), source_size), 0) << err_msg;
 }
+
+TEST(copy_file_range, uninitialized) {
+#ifdef NDEBUG // as asserts only run in debug mode
+    GTEST_SKIP();
+#endif
+
+    File_R source{"some-random-nonexistent-file232323"};
+    File_W dest{"some-random-nonexistent-file232324"};
+
+    EXPECT_DEATH({ bool res{copy_file_range(source, 0, dest, 0, 0)}; }, ".*");
+}

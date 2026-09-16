@@ -198,13 +198,14 @@ TEST(File_sym, broken_symlink) {
 }
 
 TEST(File_sym, nonexistent) {
-#ifndef NDEBUG
-    GTEST_SKIP(); // skip this test as File_sym ctr will terminate(due to the assert) as file doesn't exist
-#endif
-
     fs::path file_path{"some-random-nonexistent-file"};
 
+#ifndef NDEBUG
+    EXPECT_DEATH(File_sym file_obj{file_path}, ".*");
+#else
     File_sym file_obj{file_path};
     EXPECT_FALSE(file_obj);
     EXPECT_FALSE(file_obj.err().empty());
+
+#endif
 }

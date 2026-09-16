@@ -7,7 +7,7 @@
 using namespace packr;
 namespace fs = std::filesystem;
 
-TEST(copy_file_range, main) {
+TEST(copy_file_range_DeathTest, main) {
     std::error_code err;
     File_R source{"dummy_dir1/hallo.txt"}; // must exist in build directory
     fs::directory_entry source_ent{source.path_obj()};
@@ -49,7 +49,7 @@ TEST(copy_file_range, main) {
     EXPECT_EQ(std::memcmp(source_contents.get(), new_dest_contents.get(), source_size), 0) << err_msg;
 }
 
-TEST(copy_file_range, uninitialized) {
+TEST(copy_file_range_DeathTest, uninitialized) {
 #ifdef NDEBUG // as asserts only run in debug mode
     GTEST_SKIP();
 #endif

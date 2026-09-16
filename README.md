@@ -34,7 +34,7 @@ Given a directory, the tool packs it into a single ``.packr`` file, that can be 
 
  #### Help
  ```bash
- ./packr --help
+ ./packr -h
  ```
 
 ## Notice

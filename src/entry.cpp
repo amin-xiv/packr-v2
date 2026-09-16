@@ -27,8 +27,8 @@ namespace fs = std::filesystem;
 
 namespace packr {
 
-static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, const u8 opts,
-                                  anc_map_t& anc_table) {
+bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, const u8 opts,
+                           anc_map_t& anc_table) {
     dir_entry data_inner{entry, nest_count, opts, anc_table};
 
     if(data_inner.m_success == dir_entry_ret_code::fail) {
@@ -65,10 +65,12 @@ static bool inc_dir_ent_dir_count(dir_entry& dir, const fs::directory_entry& ent
     return true;
 }
 
-static void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, bool add_size = true) {
+void inc_dir_ent_file_count(dir_entry& dir, const fs::directory_entry& entry, const u32 nest_count, bool add_size) {
+    // add_size is true by default
     std::error_code err;
 
     if(add_size) {
+        assert(fs::exists(entry));
         dir.m_size += static_cast<ssize_t>(entry.file_size(err));
     }
     dir.m_total_entry_count++;
@@ -330,7 +332,6 @@ file_entry::file_entry(const std::filesystem::path& file_path, const u8 opts) {
     }
 
     assert(stat_res != -1);
-    // TEST: case
     if(stat_res == -1) {
         debug_log(std::format("stat_res returned -1 at file_entry constructor with file_path: {}", file_path.string()));
         m_success = false;
@@ -740,7 +741,6 @@ bool dir_entry::unpack_dir(File_R& pack_file, const u8 opts, const u32 nest_coun
 
                 if(curr_file_data.m_type == file_type::symlink) {
                     fs::directory_entry curr_file_fs{curr_file_data.m_filename};
-                    // TEST: case
                     fs::create_symlink(curr_file_data.m_secondary_path_length > 0 ? curr_file_data.m_secondary_path : "",
                                        curr_file_fs, err);
                     curr_file_fs.refresh();

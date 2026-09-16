@@ -145,7 +145,7 @@ TEST(File_R, main) {
     EXPECT_GT(std::size(buf), 0) << buf.data(); // check that actual data has been read
 }
 
-TEST(File_sym, target_regular_file) {
+TEST(File_sym_DeathTest, target_regular_file) {
     std::error_code err;
     fs::path file_path{"dummy_dir1/sym_file"}; // this must exist at the build directory
 
@@ -162,7 +162,7 @@ TEST(File_sym, target_regular_file) {
     EXPECT_EQ(file_obj.target_type(), entry_type::regular_file);
 }
 
-TEST(File_sym, target_directory) {
+TEST(File_sym_DeathTest, target_directory) {
     std::error_code err;
     // this is a symlink in dummy_dir1 that refers to a directory
     fs::path file_path{"dummy_dir1/parent_loop"}; // this must exist at the build directory
@@ -180,7 +180,7 @@ TEST(File_sym, target_directory) {
     EXPECT_EQ(file_obj.target_type(), entry_type::directory);
 }
 
-TEST(File_sym, broken_symlink) {
+TEST(File_sym_DeathTest, broken_symlink) {
     std::error_code err;
     fs::path file_path{"dummy_dir1/broken_symlink_file"}; // this must exist at the build directory
     fs::directory_entry file_ent{file_path, err};
@@ -197,7 +197,7 @@ TEST(File_sym, broken_symlink) {
     EXPECT_FALSE(file_obj.has_target());
 }
 
-TEST(File_sym, nonexistent) {
+TEST(File_sym_DeathTest, nonexistent) {
     fs::path file_path{"some-random-nonexistent-file"};
 
 #ifndef NDEBUG

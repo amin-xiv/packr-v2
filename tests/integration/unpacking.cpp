@@ -18,6 +18,7 @@ namespace fs = std::filesystem;
 using namespace packr;
 
 TEST_F(packingAndUnpackingFixture, unpackBasicData) {
+
     std::error_code err;
     const int opts{};
 
@@ -42,6 +43,7 @@ TEST_F(packingAndUnpackingFixture, unpackBasicData) {
     anc_table2.clear();
     ASSERT_EQ(new_dummy_dir1_data.m_size, get_dir_size(new_dummy_dir1, opts, anc_table1));
 
+    SCOPED_TRACE("-> compare_dir_entries(dummy_dir1_data, new_dummy_dir1_data)");
     compare_dir_entries(dummy_dir1_data, new_dummy_dir1_data);
 }
 
@@ -71,6 +73,7 @@ TEST_F(packingAndUnpackingFixture, unpackFollowSymlinks) {
     anc_table2.clear();
     ASSERT_EQ(dum_data.m_size, get_dir_size(dum, opts, anc_table1));
 
+    SCOPED_TRACE("-> compare_dir_entries(dummy_dir1_data, dum_data)");
     compare_dir_entries(dummy_dir1_data, dum_data);
 }
 
@@ -78,6 +81,8 @@ TEST_F(packingAndUnpackingFixture, unpackBasicDirStructure) {
     std::error_code err;
     fs::current_path(playground_dirname, err);
 
+    SCOPED_TRACE("-> compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_dirname), 0);)\n"
+                 "-> compare_dir_trees(dummy_dir1, fs::directory_entry(dum_dirname), O_SYM);");
     compare_dir_trees(dummy_dir1, fs::directory_entry(dummy_dir1_dirname), 0);
     compare_dir_trees(dummy_dir1, fs::directory_entry(dum_dirname), O_SYM);
 }
@@ -107,6 +112,8 @@ TEST_F(packingAndUnpackingFixture, cycle_tests_dereference) {
     anc_map.clear();
     ASSERT_EQ(cycle_test_data.m_size, get_dir_size(new_cycle_test, opts, anc_map));
 
+    SCOPED_TRACE("-> compare_dir_trees(cycle_test, new_cycle_test, opts);\n"
+                 "-> compare_dir_entries(cycle_test_data, new_cycle_test_data);");
     compare_dir_trees(cycle_test, new_cycle_test, opts);
     compare_dir_entries(cycle_test_data, new_cycle_test_data);
 }

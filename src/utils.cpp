@@ -186,7 +186,6 @@ fs::path read_symlink(const fs::path& path) {
     assert(fs::exists({fs::directory_entry{path}.symlink_status(err)}) && "Tried to read a symlink of a nonexistent entry");
 
     const fs::path secondary_path{fs::canonical(path, err)};
-    // TODO: canonical CAN'T refer to a non-existent file
     const fs::directory_entry secondary_ent{secondary_path, err};
     fs::path res; // what's going to be returned
 

@@ -1,5 +1,7 @@
 #include <cassert>
 
+// TODO: #elifdef
+
 #ifdef __cpp_contracts
 #include <contracts>
 #endif

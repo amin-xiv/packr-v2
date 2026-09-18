@@ -2,6 +2,9 @@
 
 #include <cstdint>
 #include <istream>
+#include <memory>
+#include <cassert>
+#include <stdexcept>
 
 namespace packr {
 
@@ -65,6 +68,30 @@ enum class dir_entry_ret_code : u8 {
     success,
     fail,
     recursive // returned to avoid recursion
+};
+
+template <typename T>
+struct [[nodiscard]] observe_ptr {
+  public:
+    observe_ptr() = delete;
+    explicit observe_ptr(T* data) {
+        assert(data != nullptr);
+
+        if(data == nullptr) {
+            throw std::invalid_argument{"Null pointer was passed to observe_ptr"};
+        }
+
+        m_data = data;
+    }
+    explicit observe_ptr(T& data) noexcept : m_data(std::addressof(data)) {
+    }
+
+    [[nodiscard]] T* get() noexcept {
+        return m_data;
+    }
+
+  private:
+    T* m_data;
 };
 
 } // namespace packr

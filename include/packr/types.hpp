@@ -74,20 +74,48 @@ template <typename T>
 struct [[nodiscard]] observe_ptr {
   public:
     observe_ptr() = delete;
-    explicit observe_ptr(T* data) {
-        assert(data != nullptr);
+    explicit observe_ptr(T* data) : m_data(data) {
+        // nullptrs shouldn't be used to initialize an object of this type
+
+        assert(data != nullptr && "null pointer was used to initialize observe_ptr");
 
         if(data == nullptr) {
-            throw std::invalid_argument{"Null pointer was passed to observe_ptr"};
+            throw std::invalid_argument{"null pointer was used to initialize observe_ptr"};
         }
-
-        m_data = data;
     }
     explicit observe_ptr(T& data) noexcept : m_data(std::addressof(data)) {
     }
 
-    [[nodiscard]] T* get() noexcept {
+    [[nodiscard]] T* get() const noexcept {
         return m_data;
+    }
+
+    [[nodiscard]] T* operator->() const noexcept {
+        return m_data;
+    }
+
+    [[nodiscard]] bool valid() const noexcept {
+        return m_data != nullptr;
+    }
+
+    [[nodiscard]] operator bool() const noexcept {
+        return m_data != nullptr;
+    }
+
+    void reassign(T* data) {
+        // reassign is meant to reassign the contained pointer with a non-null pointer
+
+        assert(data != nullptr && "null pointer was passed to observe_ptr::assign");
+
+        if(data == nullptr) {
+            throw std::invalid_argument{"null pointer was passed to observe_ptr::assign"};
+        }
+
+        m_data = data;
+    }
+
+    void reset() noexcept {
+        m_data = nullptr;
     }
 
   private:

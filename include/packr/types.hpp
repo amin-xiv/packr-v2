@@ -70,10 +70,14 @@ enum class dir_entry_ret_code : u8 {
     recursive // returned to avoid recursion
 };
 
+/* must be initialized with base type instead of the poitner, if type is specified explicitly */
 template <typename T>
 struct [[nodiscard]] observe_ptr {
   public:
     observe_ptr() = delete;
+    observe_ptr(observe_ptr<T>&) = default;
+    observe_ptr(observe_ptr<T>&&) = default;
+
     explicit observe_ptr(T* data) : m_data(data) {
         // nullptrs shouldn't be used to initialize an object of this type
 
@@ -83,6 +87,7 @@ struct [[nodiscard]] observe_ptr {
             throw std::invalid_argument{"null pointer was used to initialize observe_ptr"};
         }
     }
+
     explicit observe_ptr(T& data) noexcept : m_data(std::addressof(data)) {
     }
 
@@ -92,6 +97,16 @@ struct [[nodiscard]] observe_ptr {
 
     [[nodiscard]] T* operator->() const noexcept {
         return m_data;
+    }
+
+    [[nodiscard]] T operator*() const {
+        assert(m_data != nullptr && "tried to dereference a nullptr in observe_ptr");
+
+        if(m_data == nullptr) {
+            throw std::invalid_argument{"null pointer was passed to observe_ptr::assign"};
+        }
+
+        return *m_data;
     }
 
     [[nodiscard]] bool valid() const noexcept {
@@ -119,7 +134,7 @@ struct [[nodiscard]] observe_ptr {
     }
 
   private:
-    T* m_data;
+    T* m_data{};
 };
 
 } // namespace packr

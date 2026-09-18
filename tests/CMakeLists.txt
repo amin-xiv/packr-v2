@@ -3,7 +3,7 @@ include_directories(../include/)
 
 add_executable(unit_tests
 	# tests source files
-	./unit/side_tests.cpp
+	./unit/utils.cpp
 	./unit/constants.cpp
 	./unit/inc_ent_count.cpp
 

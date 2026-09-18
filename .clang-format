@@ -35,3 +35,5 @@ SortIncludes: false
 ContinuationIndentWidth: 4
 
 AllowShortEnumsOnASingleLine: false
+
+AlwaysBreakTemplateDeclarations: Yes

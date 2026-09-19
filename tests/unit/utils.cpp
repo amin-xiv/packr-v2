@@ -7,6 +7,7 @@
 #include <memory>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 using namespace packr;
 
@@ -190,17 +191,17 @@ TEST(observe_ptrDeathTest, must_throw) {
 #endif
 
     int* null{nullptr};
-    EXPECT_THROW(observe_ptr ptr_obj{null}, std::invalid_argument);
+    EXPECT_THROW(observe_ptr{null}, std::invalid_argument);
 
     int null_derference_int{1};
-    observe_ptr ptr_obj2{null_derference_int};
-    ptr_obj2.reset();
-    EXPECT_THROW({ int dummy = *ptr_obj2; }, std::runtime_error);
+    observe_ptr ptr_obj1{null_derference_int};
+    ptr_obj1.reset();
+    EXPECT_THROW({ int dummy = *ptr_obj1; }, std::runtime_error);
 
     int null_reassign{1};
-    observe_ptr ptr_obj3{null_reassign};
-    ptr_obj3.reset();
-    EXPECT_THROW(ptr_obj3.reassign(nullptr), std::invalid_argument);
+    observe_ptr ptr_obj2{null_reassign};
+    ptr_obj2.reset();
+    EXPECT_THROW(ptr_obj2.reassign(nullptr), std::invalid_argument);
 }
 
 TEST(observe_ptrDeathTest, must_die) {
@@ -209,15 +210,15 @@ TEST(observe_ptrDeathTest, must_die) {
 #endif
 
     int* null{nullptr};
-    EXPECT_DEATH({ observe_ptr ptr_obj{null}; }, ".*");
+    EXPECT_DEATH({ observe_ptr{null}; }, ".*");
 
     int null_derference_int{1};
-    observe_ptr ptr_obj2{null_derference_int};
-    ptr_obj2.reset();
-    EXPECT_DEATH({ int dummy = *ptr_obj2; }, ".*");
+    observe_ptr ptr_obj1{null_derference_int};
+    ptr_obj1.reset();
+    EXPECT_DEATH({ int dummy = *ptr_obj1; }, ".*");
 
     int null_reassign{1};
-    observe_ptr ptr_obj3{null_reassign};
-    ptr_obj3.reset();
-    EXPECT_DEATH(ptr_obj3.reassign(nullptr), ".*");
+    observe_ptr ptr_obj2{null_reassign};
+    ptr_obj2.reset();
+    EXPECT_DEATH(ptr_obj2.reassign(nullptr), ".*");
 }

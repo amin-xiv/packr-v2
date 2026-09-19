@@ -72,7 +72,7 @@ enum class dir_entry_ret_code : u8 {
 
 /* must be initialized with base type instead of the poitner, if type is specified explicitly */
 template <typename T>
-struct [[nodiscard]] observe_ptr {
+struct observe_ptr final {
   public:
     observe_ptr() = delete;
     observe_ptr(observe_ptr<T>&) = default;

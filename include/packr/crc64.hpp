@@ -5,7 +5,7 @@
 namespace packr::hash {
 
 /* CRC-64/ECMA-182 implementation (MSB-first) */
-class Crc64 {
+class Crc64 final {
   public:
     Crc64() = delete;
     // this class doesn't manage msg, it simply edits it within its bounds

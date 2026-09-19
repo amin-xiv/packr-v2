@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <memory>
 #include <cstring>
+#include <stdexcept>
 
 using namespace packr;
 
@@ -181,4 +182,42 @@ TEST(observe_ptrDeathTest, main) {
 
     delete int_heap;
     delete char_heap;
+}
+
+TEST(observe_ptrDeathTest, must_throw) {
+#ifndef NDEBUG // must run only in release as there are asserts before the throw statement
+    GTEST_SKIP();
+#endif
+
+    int* null{nullptr};
+    EXPECT_THROW(observe_ptr ptr_obj{null}, std::invalid_argument);
+
+    int null_derference_int{1};
+    observe_ptr ptr_obj2{null_derference_int};
+    ptr_obj2.reset();
+    EXPECT_THROW({ int dummy = *ptr_obj2; }, std::runtime_error);
+
+    int null_reassign{1};
+    observe_ptr ptr_obj3{null_reassign};
+    ptr_obj3.reset();
+    EXPECT_THROW(ptr_obj3.reassign(nullptr), std::invalid_argument);
+}
+
+TEST(observe_ptrDeathTest, must_die) {
+#ifdef NDEBUG // must run only in debug as asserts are stripped out in release mode
+    GTEST_SKIP();
+#endif
+
+    int* null{nullptr};
+    EXPECT_DEATH({ observe_ptr ptr_obj{null}; }, ".*");
+
+    int null_derference_int{1};
+    observe_ptr ptr_obj2{null_derference_int};
+    ptr_obj2.reset();
+    EXPECT_DEATH({ int dummy = *ptr_obj2; }, ".*");
+
+    int null_reassign{1};
+    observe_ptr ptr_obj3{null_reassign};
+    ptr_obj3.reset();
+    EXPECT_DEATH(ptr_obj3.reassign(nullptr), ".*");
 }

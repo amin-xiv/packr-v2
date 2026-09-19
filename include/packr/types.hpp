@@ -103,7 +103,7 @@ struct [[nodiscard]] observe_ptr {
         assert(m_data != nullptr && "tried to dereference a nullptr in observe_ptr");
 
         if(m_data == nullptr) {
-            throw std::invalid_argument{"null pointer was passed to observe_ptr::assign"};
+            throw std::runtime_error{"null pointer was passed to observe_ptr::assign"};
         }
 
         return *m_data;

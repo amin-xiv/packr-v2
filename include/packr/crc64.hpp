@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <packr/types.hpp>
 
 namespace packr::hash {
@@ -16,15 +17,18 @@ class Crc64 final {
 
     [[nodiscard]] bool verify() const noexcept;
 
-  private:
     [[nodiscard]] u64 compute_checksum() const noexcept;
 
-    const observe_ptr<char> m_data;
-    u64 m_len;
+    [[nodiscard]] static void* reserve_checksum_space(std::unique_ptr<char[]> ptr);
+
+  private:
+    observe_ptr<char> m_data;
+    u64 m_byte_len; // total message size
 
     constexpr static u64 s_divisor{0x42f0e1eba9ea3693};
     constexpr static u64 s_check_value{0x6c40df5f0b497347};
-    constexpr static u8 s_divisor_width{64};
+    constexpr static u8 s_divisor_width_bits{64};
+    constexpr static u8 s_divisor_width_bytes{8};
 };
 
 } // namespace packr::hash

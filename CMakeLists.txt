@@ -9,6 +9,7 @@ add_executable(packr
 	./src/main.cpp
 	./src/utils.cpp
 	./src/fs_node.cpp
+	./src/crc64.cpp
 )
 include_directories(./include)
 target_compile_options(packr PRIVATE

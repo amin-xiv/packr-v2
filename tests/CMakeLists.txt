@@ -6,11 +6,13 @@ add_executable(unit_tests
 	./unit/utils.cpp
 	./unit/constants.cpp
 	./unit/inc_ent_count.cpp
+	./unit/crc64.cpp
 
 	# source files
 	../src/fs_node.cpp
 	../src/utils.cpp
 	../src/entry.cpp
+	../src/crc64.cpp
 )
 
 add_executable(integration_tests

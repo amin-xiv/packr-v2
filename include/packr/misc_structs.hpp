@@ -19,4 +19,19 @@ struct dev_ino_t final {
     u64 ino{};
 };
 
+/* holds a pointer to an mmaped memory area, releases it at its destructor */
+struct mmaped final {
+  public:
+    mmaped() = delete;
+    mmaped(mmaped&) = delete;
+
+    mmaped(std::unique_ptr<char[]> ptr, const packr_size_t size);
+    mmaped(mmaped&& other) noexcept;
+    ~mmaped();
+
+  private:
+    void* m_data{};
+    const packr_size_t m_size{};
+};
+
 } // namespace packr

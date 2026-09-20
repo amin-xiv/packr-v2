@@ -18,6 +18,7 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 
+using packr_size_t = uint64_t;
 using pos_type = std::istream::pos_type;
 
 enum class OP_TYPE : u8 {

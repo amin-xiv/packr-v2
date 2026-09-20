@@ -117,6 +117,13 @@ struct observe_ptr final {
         return m_data != nullptr;
     }
 
+    [[nodiscard]] T& operator[](size_t index) const noexcept {
+        assert(this->valid());
+        // No exceptions thrown in release mode as this is intended to be performance-friendly
+        // so, correctness is the responsability of the user
+        return *(m_data + index);
+    }
+
     void reassign(T* data) {
         // reassign is meant to reassign the contained pointer with a non-null pointer
 

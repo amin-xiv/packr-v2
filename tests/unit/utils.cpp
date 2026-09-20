@@ -183,6 +183,15 @@ TEST(observe_ptrDeathTest, main) {
 
     delete int_heap;
     delete char_heap;
+
+    char arr[]{'a', 'b', 'c'};
+    observe_ptr arr_ptr_obj{arr};
+
+    EXPECT_EQ(arr[0], arr_ptr_obj[0]);
+    EXPECT_EQ(arr[1], arr_ptr_obj[1]);
+    EXPECT_EQ(arr[2], arr_ptr_obj[2]);
+    arr_ptr_obj[0] = 'z';
+    EXPECT_EQ(arr_ptr_obj[0], 'z');
 }
 
 TEST(observe_ptrDeathTest, must_throw) {
@@ -221,4 +230,9 @@ TEST(observe_ptrDeathTest, must_die) {
     observe_ptr ptr_obj2{null_reassign};
     ptr_obj2.reset();
     EXPECT_DEATH(ptr_obj2.reassign(nullptr), ".*");
+
+    int out_of_bounds_index{1};
+    observe_ptr ptr_obj3{out_of_bounds_index};
+    ptr_obj3.reset();
+    EXPECT_DEATH({ int test_int{ptr_obj3[5]}; }, ".*");
 }

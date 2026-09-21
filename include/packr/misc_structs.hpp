@@ -20,18 +20,25 @@ struct dev_ino_t final {
 };
 
 /* holds a pointer to an mmaped memory area, releases it at its destructor */
-struct mmaped final {
+struct mmapped final {
   public:
-    mmaped() = delete;
-    mmaped(mmaped&) = delete;
+    mmapped() = delete;
+    mmapped(mmapped&) = delete;
+    mmapped& operator=(const mmapped&) = delete;
 
-    mmaped(std::unique_ptr<char[]> ptr, const packr_size_t size);
-    mmaped(mmaped&& other) noexcept;
-    ~mmaped();
+    explicit mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept;
+    explicit mmapped(mmapped&& other) noexcept;
+    mmapped& operator=(mmapped&& other) noexcept;
+    ~mmapped() noexcept;
+
+    void unmap() noexcept;
+    [[nodiscard]] bool valid() const noexcept;
+    [[nodiscard]] void* get() const noexcept;
 
   private:
-    void* m_data{};
-    const packr_size_t m_size{};
+    void* m_data{nullptr};
+    packr_size_t m_size{};
+    general_status m_status{general_status::base};
 };
 
 } // namespace packr

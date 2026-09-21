@@ -71,6 +71,12 @@ enum class dir_entry_ret_code : u8 {
     recursive // returned to avoid recursion
 };
 
+enum class general_status : u8 {
+    base,
+    success,
+    failure
+};
+
 /* must be initialized with base type instead of the poitner, if type is specified explicitly */
 template <typename T>
 struct observe_ptr final {

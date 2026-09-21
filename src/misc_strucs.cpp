@@ -3,18 +3,16 @@
 
 #include <memory>
 #include <sys/mman.h>
-#include <format>
 #include <utility>
+#include <cstring>
 
 using namespace packr;
 
-mmapped::mmapped([[maybe_unused]] std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept : m_size(size) {
-    assert(size > 0);
-    assert(ptr);
+mmapped::mmapped(const packr_size_t size) noexcept : m_size(size) {
+    assert(size > 0 && "tried to construct an mmapped object with size of 0");
 
     m_data = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_ANONYMOUS, -1, 0);
     if(m_data == MAP_FAILED) {
-        debug_log(std::format("mmap failed with size argument of: {}", size));
         m_status = general_status::failure;
         m_data = nullptr;
         return;
@@ -23,12 +21,24 @@ mmapped::mmapped([[maybe_unused]] std::unique_ptr<char[]> ptr, const packr_size_
     m_status = general_status::success;
 }
 
-mmapped::mmapped(mmapped&& other) noexcept
-    : m_data(std::exchange(other.m_data, nullptr)), m_size(other.m_size), m_status(other.m_status) {
+mmapped::mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept : m_size(size) {
+    assert(size > 0);
+    assert(ptr);
 
-    assert(other.m_size > 0);
-    assert(other.m_data);
-    assert(other.valid());
+    m_data = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_ANONYMOUS, -1, 0);
+    if(m_data == MAP_FAILED) {
+        m_status = general_status::failure;
+        m_data = nullptr;
+        return;
+    }
+
+    m_status = general_status::success;
+    std::memcpy(m_data, ptr.get(), size);
+}
+
+mmapped::mmapped(mmapped&& other) noexcept
+    : m_data(std::exchange(other.m_data, nullptr)), m_size(std::exchange(other.m_size, 0)),
+      m_status(std::exchange(other.m_status, general_status::base)) {
 }
 
 mmapped& mmapped::operator=(mmapped&& other) noexcept {
@@ -60,11 +70,6 @@ mmapped::~mmapped() noexcept {
     }
 
     [[maybe_unused]] int res{munmap(m_data, m_size)};
-
-    if(res != 0) {
-        debug_log(std::format("failed to unmap memory region, with address {} and size {}", m_data, m_size));
-    }
-
     assert(res == 0);
 
     m_data = nullptr;
@@ -91,4 +96,12 @@ bool mmapped::valid() const noexcept {
 
 void* mmapped::get() const noexcept {
     return m_data;
+}
+
+packr_size_t mmapped::size() const noexcept {
+    return m_size;
+}
+
+general_status mmapped::status() const noexcept {
+    return m_status;
 }

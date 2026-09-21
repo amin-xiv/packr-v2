@@ -3,16 +3,20 @@ include_directories(../include/)
 
 add_executable(unit_tests
 	# tests source files
-	./unit/utils.cpp
+	./unit/string_ops.cpp
 	./unit/constants.cpp
 	./unit/inc_ent_count.cpp
 	./unit/crc64.cpp
+	./unit/observe_ptr.cpp
+	./unit/mmapped.cpp
+	./unit/others.cpp
 
 	# source files
 	../src/fs_node.cpp
 	../src/utils.cpp
 	../src/entry.cpp
 	../src/crc64.cpp
+	../src/misc_strucs.cpp
 )
 
 add_executable(integration_tests

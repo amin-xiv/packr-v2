@@ -37,3 +37,7 @@ ContinuationIndentWidth: 4
 AllowShortEnumsOnASingleLine: false
 
 AlwaysBreakTemplateDeclarations: Yes
+
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0

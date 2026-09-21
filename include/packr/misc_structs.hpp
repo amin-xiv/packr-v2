@@ -22,10 +22,11 @@ struct dev_ino_t final {
 /* holds a pointer to an mmaped memory area, releases it at its destructor */
 struct mmapped final {
   public:
-    mmapped() = delete;
+    mmapped() = default;
     mmapped(mmapped&) = delete;
     mmapped& operator=(const mmapped&) = delete;
 
+    explicit mmapped(const packr_size_t size) noexcept;
     explicit mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept;
     explicit mmapped(mmapped&& other) noexcept;
     mmapped& operator=(mmapped&& other) noexcept;
@@ -34,6 +35,8 @@ struct mmapped final {
     void unmap() noexcept;
     [[nodiscard]] bool valid() const noexcept;
     [[nodiscard]] void* get() const noexcept;
+    [[nodiscard]] packr_size_t size() const noexcept;
+    [[nodiscard]] general_status status() const noexcept;
 
   private:
     void* m_data{nullptr};

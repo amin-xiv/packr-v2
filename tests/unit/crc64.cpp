@@ -8,9 +8,9 @@
 using namespace packr;
 using namespace packr::hash;
 
-#define MSG_SIZE 17
-#define MSG_PRINT_SIZE (MSG_SIZE - 1)
-#define DIVSIOR_WIDTH 8
+constexpr int MSG_SIZE{17};
+constexpr int MSG_PRINT_SIZE{(MSG_SIZE - 1)};
+constexpr int DIVSIOR_WIDTH{8};
 
 class crc64_fixture : public testing::Test {
   protected:

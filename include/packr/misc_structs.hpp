@@ -34,7 +34,10 @@ struct mmapped final {
 
     void unmap() noexcept;
     [[nodiscard]] bool valid() const noexcept;
-    [[nodiscard]] void* get() const noexcept;
+    [[nodiscard]] char* get() const noexcept;
+    void read(observe_ptr<char> dest, const packr_size_t count) const noexcept;
+    void write(observe_ptr<char> src, const packr_size_t count) const noexcept;
+    void clear() const noexcept;
     [[nodiscard]] packr_size_t size() const noexcept;
     [[nodiscard]] general_status status() const noexcept;
 

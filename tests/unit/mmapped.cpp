@@ -8,6 +8,7 @@
 using namespace packr;
 
 constexpr int PLAIN_SIZE{100};
+constexpr int KiB{1024};
 
 class mmaped_fixture : public ::testing::Test {
   public:
@@ -45,7 +46,7 @@ TEST_F(mmaped_fixture, main) {
     EXPECT_NE(data_initialized.get(), nullptr);
     EXPECT_EQ(data_initialized.size(), test_str.size() + 1);
     EXPECT_EQ(data_initialized.status(), general_status::success);
-    EXPECT_STREQ(test_str.data(), static_cast<char*>(data_initialized.get()));
+    EXPECT_STREQ(test_str.data(), data_initialized.get());
 
     // move constructor
     mmapped moved1{std::move(data_initialized)};
@@ -53,7 +54,7 @@ TEST_F(mmaped_fixture, main) {
     EXPECT_NE(moved1.get(), nullptr);
     EXPECT_EQ(moved1.size(), test_str.size() + 1);
     EXPECT_EQ(moved1.status(), general_status::success);
-    EXPECT_STREQ(test_str.data(), static_cast<char*>(moved1.get()));
+    EXPECT_STREQ(test_str.data(), moved1.get());
     // make sure other object is invalidated/reset
     ASSERT_FALSE(data_initialized.valid());                     // NOLINT(bugprone-use-after-move)
     EXPECT_EQ(data_initialized.get(), nullptr);                 // NOLINT(bugprone-use-after-move)
@@ -67,7 +68,7 @@ TEST_F(mmaped_fixture, main) {
     EXPECT_NE(moved2.get(), nullptr);
     EXPECT_EQ(moved2.size(), test_str.size() + 1);
     EXPECT_EQ(moved2.status(), general_status::success);
-    EXPECT_STREQ(test_str.data(), static_cast<char*>(moved2.get()));
+    EXPECT_STREQ(test_str.data(), moved2.get());
     // make sure other object is invalidated/reset
     ASSERT_FALSE(moved1.valid());                     // NOLINT(bugprone-use-after-move)
     EXPECT_EQ(moved1.get(), nullptr);                 // NOLINT(bugprone-use-after-move)
@@ -80,6 +81,23 @@ TEST_F(mmaped_fixture, main) {
     EXPECT_EQ(moved2.get(), nullptr);
     EXPECT_EQ(moved2.size(), 0);
     EXPECT_EQ(moved2.status(), general_status::base);
+}
+
+TEST_F(mmaped_fixture, io) {
+    plain.write(observe_ptr{test_str.data()}, test_str.size() + 1);
+    char buf1[KiB]{};
+    plain.read(observe_ptr{buf1}, test_str.size() + 1);
+
+    EXPECT_STREQ(test_str.data(), buf1);
+
+    mmapped value_intialized{std::move(data_buf_ptr), test_str.size() + 1};
+
+    EXPECT_STREQ(test_str.data(), value_intialized.get());
+    value_intialized.clear();
+    ASSERT_EQ(std::strlen(value_intialized.get()), 0);
+    char buf2[KiB]{"blablabla"};
+    value_intialized.write(observe_ptr{buf2}, std::strlen(buf2));
+    EXPECT_STREQ(buf2, value_intialized.get());
 }
 
 TEST(mmaped_DeathTest, constructors) {

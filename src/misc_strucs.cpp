@@ -94,8 +94,24 @@ bool mmapped::valid() const noexcept {
     return m_data != nullptr;
 }
 
-void* mmapped::get() const noexcept {
-    return m_data;
+char* mmapped::get() const noexcept {
+    return static_cast<char*>(m_data);
+}
+
+void mmapped::read(observe_ptr<char> dest, const packr_size_t count) const noexcept {
+    assert(m_size >= count && "tried to read an mmapped struct with a count greater than m_size");
+
+    std::memcpy(dest.get(), m_data, count);
+}
+
+void mmapped::write(observe_ptr<char> src, const packr_size_t count) const noexcept {
+    assert(m_size >= count && "tried to read an mmapped struct with a count greater than m_size");
+
+    std::memcpy(m_data, src.get(), count);
+}
+
+void mmapped::clear() const noexcept {
+    std::memset(m_data, '\0', m_size);
 }
 
 packr_size_t mmapped::size() const noexcept {

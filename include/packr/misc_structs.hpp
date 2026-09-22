@@ -27,7 +27,8 @@ struct mmapped final {
     mmapped& operator=(const mmapped&) = delete;
 
     explicit mmapped(const packr_size_t size) noexcept;
-    explicit mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept;
+    explicit mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept; // takes control of ptr
+    explicit mmapped(const char* ptr, const packr_size_t size) noexcept;             // non-owning
     explicit mmapped(mmapped&& other) noexcept;
     mmapped& operator=(mmapped&& other) noexcept;
     ~mmapped() noexcept;

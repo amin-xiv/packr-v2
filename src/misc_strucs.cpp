@@ -36,6 +36,21 @@ mmapped::mmapped(std::unique_ptr<char[]> ptr, const packr_size_t size) noexcept 
     std::memcpy(m_data, ptr.get(), size);
 }
 
+mmapped::mmapped(const char* ptr, const packr_size_t size) noexcept : m_size(size) {
+    assert(size > 0);
+    assert(ptr != nullptr);
+
+    m_data = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_ANONYMOUS, -1, 0);
+    if(m_data == MAP_FAILED) {
+        m_status = general_status::failure;
+        m_data = nullptr;
+        return;
+    }
+
+    m_status = general_status::success;
+    std::memcpy(m_data, ptr, size);
+}
+
 mmapped::mmapped(mmapped&& other) noexcept
     : m_data(std::exchange(other.m_data, nullptr)), m_size(std::exchange(other.m_size, 0)),
       m_status(std::exchange(other.m_status, general_status::base)) {

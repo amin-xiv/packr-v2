@@ -15,6 +15,7 @@ constexpr int DIVSIOR_WIDTH{8};
 class crc64_fixture : public testing::Test {
   protected:
     char message[MSG_SIZE + 1]{"123456789kjkjkjkj"}; // +1 for null terminator
+    constexpr static u64 s_check_value{0x6c40df5f0b497347};
 };
 
 TEST_F(crc64_fixture, compute_checksum) {
@@ -37,4 +38,8 @@ TEST_F(crc64_fixture, compute_checksum) {
             EXPECT_EQ(message[i], 0);
         }
     }
+
+    std::println(stderr, "message: {}, size: {}", message, MSG_PRINT_SIZE);
+    std::println(stderr, "checksum: {:x}", checksum);
+    std::println(stderr, "data: {}", message[0]);
 }

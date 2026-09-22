@@ -17,13 +17,17 @@ class Crc64 final {
 
     [[nodiscard]] bool verify() const noexcept;
 
-    [[nodiscard]] u64 compute_checksum() const noexcept;
+    [[nodiscard]] u64 compute_checksum() noexcept;
 
     [[nodiscard]] static void* reserve_checksum_space(std::unique_ptr<char[]> ptr);
 
   private:
     observe_ptr<char> m_data;
-    u64 m_byte_len; // total message size
+    packr_size_t m_byte_len{}; // total message size
+
+    u64 m_offset_bits{};
+    u64 m_quotient{};
+    u64 m_partial_remainder{};
 
     constexpr static u64 s_divisor{0x42f0e1eba9ea3693};
     constexpr static u64 s_check_value{0x6c40df5f0b497347};

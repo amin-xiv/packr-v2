@@ -6,11 +6,6 @@
 #include <stdexcept>
 // #include <memory>
 
-// NOTE: Stopped at trying to impelment long division, now learning more about the enum class std::byte and how to use it for the
-// left most and new right most bit swap, commented that part in compute_checksum to not interfere with tests
-
-// TODO: Added a new cosntructor to observe ptr that takes a non-owning raw ptr, write tests for it
-
 [[maybe_unused]] constexpr static int BYTE_WIDTH{8};
 
 namespace packr::hash {

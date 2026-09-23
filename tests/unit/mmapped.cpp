@@ -41,25 +41,33 @@ TEST_F(mmaped_fixture, main) {
     EXPECT_EQ(plain.status(), general_status::success);
 
     // construct by buf and size
-    mmapped data_initialized{std::move(data_buf_ptr), test_str.size() + 1};
-    ASSERT_TRUE(data_initialized.valid());
-    EXPECT_NE(data_initialized.get(), nullptr);
-    EXPECT_EQ(data_initialized.size(), test_str.size() + 1);
-    EXPECT_EQ(data_initialized.status(), general_status::success);
-    EXPECT_STREQ(test_str.data(), data_initialized.get());
+    mmapped data_initialized1{std::move(data_buf_ptr), test_str.size() + 1};
+    ASSERT_TRUE(data_initialized1.valid());
+    EXPECT_NE(data_initialized1.get(), nullptr);
+    EXPECT_EQ(data_initialized1.size(), test_str.size() + 1);
+    EXPECT_EQ(data_initialized1.status(), general_status::success);
+    EXPECT_STREQ(test_str.data(), data_initialized1.get());
+
+    // construct by raw pointer
+    mmapped data_initialized2{test_str.data(), test_str.size() + 1};
+    ASSERT_TRUE(data_initialized2.valid());
+    EXPECT_NE(data_initialized2.get(), nullptr);
+    EXPECT_EQ(data_initialized2.size(), test_str.size() + 1);
+    EXPECT_EQ(data_initialized2.status(), general_status::success);
+    EXPECT_STREQ(test_str.data(), data_initialized2.get());
 
     // move constructor
-    mmapped moved1{std::move(data_initialized)};
+    mmapped moved1{std::move(data_initialized1)};
     ASSERT_TRUE(moved1.valid());
     EXPECT_NE(moved1.get(), nullptr);
     EXPECT_EQ(moved1.size(), test_str.size() + 1);
     EXPECT_EQ(moved1.status(), general_status::success);
     EXPECT_STREQ(test_str.data(), moved1.get());
     // make sure other object is invalidated/reset
-    ASSERT_FALSE(data_initialized.valid());                     // NOLINT(bugprone-use-after-move)
-    EXPECT_EQ(data_initialized.get(), nullptr);                 // NOLINT(bugprone-use-after-move)
-    EXPECT_EQ(data_initialized.size(), 0);                      // NOLINT(bugprone-use-after-move)
-    EXPECT_EQ(data_initialized.status(), general_status::base); // NOLINT(bugprone-use-after-move)
+    ASSERT_FALSE(data_initialized1.valid());                     // NOLINT(bugprone-use-after-move)
+    EXPECT_EQ(data_initialized1.get(), nullptr);                 // NOLINT(bugprone-use-after-move)
+    EXPECT_EQ(data_initialized1.size(), 0);                      // NOLINT(bugprone-use-after-move)
+    EXPECT_EQ(data_initialized1.status(), general_status::base); // NOLINT(bugprone-use-after-move)
 
     // operator=
     mmapped moved2{};
@@ -114,4 +122,8 @@ TEST(mmaped_DeathTest, constructors) {
     // must die due to size = 0
     std::unique_ptr<char[]> dummy_ptr2{std::make_unique<char[]>(1)};
     EXPECT_DEATH(mmapped(std::move(dummy_ptr1), 0), ".*");
+
+    // must die due to ptr = nullptr
+    char* ptr{nullptr};
+    EXPECT_DEATH(mmapped(ptr, 1), ".*");
 }

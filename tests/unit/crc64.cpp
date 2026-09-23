@@ -40,6 +40,6 @@ TEST_F(crc64_fixture, compute_checksum) {
     }
 
     std::println(stderr, "message: {}, size: {}", message, MSG_PRINT_SIZE);
-    std::println(stderr, "checksum: {:x}", checksum);
+    std::println(stderr, "checksum: {:064b}", checksum);
     std::println(stderr, "data: {}", message[0]);
 }
